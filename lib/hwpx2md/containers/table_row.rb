@@ -1,7 +1,7 @@
 require 'docx2md/containers/table_cell'
 require 'docx2md/containers/container'
 
-module Docx2md
+module Hwpx2md
   module Elements
     module Containers
       class TableRow

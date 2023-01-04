@@ -1,6 +1,6 @@
 require 'docx2md/version'
 
-module Docx2md #:nodoc:
+module Hwpx2md #:nodoc:
   autoload :Document, 'docx2md/document'
 end
 

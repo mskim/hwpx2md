@@ -3,7 +3,7 @@ require 'docx2md/version'
 
 Gem::Specification.new do |s|
   s.name        = 'docx2md'
-  s.version     = Docx2md::VERSION
+  s.version     = Hwpx2md::VERSION
   s.licenses    = ['MIT']
   s.summary     = 'a ruby library/gem for converting docx files to markdown'
   s.description = 'thin wrapper around rubyzip and nokogiri as a way to get started with docx files'

@@ -3,7 +3,7 @@ require 'docx2md/elements'
 require 'nokogiri'
 require 'zip'
 
-module Docx2md
+module Hwpx2md
   # The Document class wraps around a docx file and provides methods to
   # interface with it.
   #

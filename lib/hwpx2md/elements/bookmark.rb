@@ -1,6 +1,6 @@
 require 'docx2md/elements/element'
 
-module Docx2md
+module Hwpx2md
   module Elements
     class Bookmark
       include Element

@@ -1,6 +1,6 @@
 require 'docx2md/elements'
 
-module Docx2md
+module Hwpx2md
   module Elements
     module Containers
       module Container

@@ -1,4 +1,4 @@
-module Docx2md
+module Hwpx2md
   module Elements
     class Text
       include Element

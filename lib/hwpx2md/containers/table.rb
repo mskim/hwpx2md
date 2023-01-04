@@ -2,7 +2,7 @@ require 'docx2md/containers/table_row'
 require 'docx2md/containers/table_column'
 require 'docx2md/containers/container'
 
-module Docx2md
+module Hwpx2md
   module Elements
     module Containers
       class Table

@@ -2,7 +2,7 @@ require 'nokogiri'
 require 'docx2md/elements'
 require 'docx2md/containers'
 
-module Docx2md
+module Hwpx2md
   module Elements
     module Element
       DEFAULT_TAG = ''
