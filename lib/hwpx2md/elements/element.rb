@@ -1,6 +1,6 @@
 require 'nokogiri'
-require 'docx2md/elements'
-require 'docx2md/containers'
+require 'hwpx2md/elements'
+require 'hwpx2md/containers'
 
 module Hwpx2md
   module Elements

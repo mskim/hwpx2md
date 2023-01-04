@@ -20,7 +20,7 @@ Steps to reproduce the behavior or put a short code to reproduce the bug.
 ```rb
 require 'docx'
 
-doc = Docx::Document.new('/path/to/your/docx2md/file.docx')
+doc = Docx::Document.new('/path/to/your/hwpx2md/file.docx')
 
 ## Something to reproduce the bug here
 ```

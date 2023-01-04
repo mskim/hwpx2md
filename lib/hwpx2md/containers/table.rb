@@ -1,6 +1,6 @@
-require 'docx2md/containers/table_row'
-require 'docx2md/containers/table_column'
-require 'docx2md/containers/container'
+require 'hwpx2md/containers/table_row'
+require 'hwpx2md/containers/table_column'
+require 'hwpx2md/containers/container'
 
 module Hwpx2md
   module Elements

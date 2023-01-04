@@ -1,3 +1,3 @@
-require 'docx2md/elements/bookmark'
-require 'docx2md/elements/element'
-require 'docx2md/elements/text'
+require 'hwpx2md/elements/bookmark'
+require 'hwpx2md/elements/element'
+require 'hwpx2md/elements/text'

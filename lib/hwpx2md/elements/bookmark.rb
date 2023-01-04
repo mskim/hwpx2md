@@ -1,4 +1,4 @@
-require 'docx2md/elements/element'
+require 'hwpx2md/elements/element'
 
 module Hwpx2md
   module Elements

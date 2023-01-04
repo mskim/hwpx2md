@@ -1,5 +1,5 @@
-require 'docx2md/containers'
-require 'docx2md/elements'
+require 'hwpx2md/containers'
+require 'hwpx2md/elements'
 require 'nokogiri'
 require 'zip'
 

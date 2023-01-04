@@ -1,8 +1,8 @@
-require 'docx2md/version'
+require 'hwpx2md/version'
 
 module Hwpx2md #:nodoc:
-  autoload :Document, 'docx2md/document'
+  autoload :Document, 'hwpx2md/document'
 end
 
-require 'docx2md/core_ext/module'
+require 'hwpx2md/core_ext/module'
 require 'pry-byebug'

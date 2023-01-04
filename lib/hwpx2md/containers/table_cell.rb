@@ -1,5 +1,5 @@
-require 'docx2md/containers/text_run'
-require 'docx2md/containers/container'
+require 'hwpx2md/containers/text_run'
+require 'hwpx2md/containers/container'
 
 module Hwpx2md
   module Elements

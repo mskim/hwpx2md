@@ -1,4 +1,4 @@
-require 'docx2md/containers/container'
+require 'hwpx2md/containers/container'
 
 module Hwpx2md
   module Elements
