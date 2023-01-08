@@ -4,25 +4,15 @@ require 'nokogiri'
 require 'zip'
 
 module Hwpx2md
-  # The Document class wraps around a docx file and provides methods to
-  # interface with it.
-  #
-  #   # get a Docx::Document for a docx file in the local directory
-  #   doc = Docx::Document.open("test.docx")
-  #
-  #   # get the text from the document
-  #   puts doc.text
-  #
-  #   # do the same thing in a block
-  #   Docx::Document.open("test.docx") do |d|
-  #     puts d.text
-  #   end
+ 
   class Document
     attr_reader :xml, :doc, :zip, :styles
     attr_reader :styles_hash, :footnotes_hash
     attr_accessor :footnote_number
     attr_accessor :text_with_footnote
-
+    attr_reader :para_footnote_numbers, :para_footnotes
+    attr_reader :txt_content
+    
     def initialize(path_or_io, options = {})
       @replace = {}
 
@@ -32,11 +22,11 @@ module Hwpx2md
       else
         @zip = Zip::File.open_buffer(path_or_io)
       end
-      document = @zip.glob('word/document*.xml').first
+      document = @zip.glob('Contents/section*.xml').first
       raise Errno::ENOENT if document.nil?
       @document_xml = document.get_input_stream.read
       @doc = Nokogiri::XML(@document_xml)
-      load_styles
+      # load_styles
       yield(self) if block_given?
     ensure
       @zip.close
@@ -46,7 +36,7 @@ module Hwpx2md
     def document_properties
       {
         font_size: font_size,
-        hyperlinks: hyperlinks
+        # hyperlinks: hyperlinks
       }
     end
 
@@ -59,7 +49,7 @@ module Hwpx2md
     end
 
     def paragraphs
-      @doc.xpath('//w:document//w:body/w:p').map { |p_node| parse_paragraph_from p_node }
+      @doc.xpath('//hs:sec/hp:p').map { |p_node| parse_paragraph_from p_node }
     end
 
     def bookmarks
@@ -115,17 +105,63 @@ module Hwpx2md
       paragraphs.map(&:to_s).join("\n")
     end
 
-    # Output entire document as a String HTML fragment
-    def to_html
-      paragraphs.map(&:to_html).join("\n")
+    def to_txt
+      @txt_content = paragraphs.map{|p| p.to_txt(self)}.join("\n")
+      @txt_content.gsub!("\n\n\n\n", "\n\n")
+      @txt_content.gsub!("\n\n\n", "\n\n")
+      @txt_content
     end
 
-    def to_txt
-      build_footnotes_hash
-      @footnote_number = 1
-      paragraphs.map{|p| p.to_txt(self)}.join("\n")
-    end
-    
+    # def to_txt
+    #   @txt_content = ""
+    #   secs = @doc.xpath('.//hs:sec')
+    #   @para_footnotes = []
+    #   @para_footnote_numbers  = []
+    #   secs.each do |sec|
+    #     paragraphs = sec.xpath('.//hp:p')
+    #     paragraphs.each do |para|
+    #       @para_text = ""
+    #       runs = para.xpath('.//hp:run')
+    #       runs.each do |run|
+    #         t_nodes = run.xpath('.//hp:ctrl//hp:footNote|.//hp:t')
+    #         t_nodes.each do |t_node|
+    #           if t_node.path =~/hp:footNote/
+    #             ctrl_node = t_node.parent
+    #             auto_num_node = ctrl_node.at_xpath('.//hp:autoNum')
+    #             auto_num_node_path = auto_num_node.path
+    #             footnote_number = auto_num_node.attributes['num'].value
+    #             unless @para_footnote_numbers.include?(footnote_number)
+    #               @para_text.chomp!
+    #               @para_text += "[^#{footnote_number}]"
+    #               @para_footnote_numbers << footnote_number
+    #             end
+    #             footnote_text_node = ctrl_node.at_xpath('.//hp:t')
+    #             footnote_info = []
+    #             node_path = footnote_text_node.path
+    #             footnote_info << node_path
+    #             footnote_info << footnote_number
+    #             footnote_info << footnote_text_node.content
+    #             para_footnote_nodes_path =  @para_footnotes.map{|e| e[0]}
+    #             unless para_footnote_nodes_path.include?(node_path)
+    #               @para_footnotes  << footnote_info
+    #             end
+    #           else
+    #             @para_text += t_node.content
+    #             @para_text += "\n"
+    #           end
+    #         end
+    #       end
+    #       @txt_content += @para_text
+    #     end
+    #   end
+    #   @txt_content 
+    #   @txt_content += "\n"
+    #   # @para_footnotes.each_with_index do |footnote, i|
+    #   #   @txt_content += "[^#{footnote[1]}]:#{footnote[2]}\n\n"
+    #   # end
+    #   @txt_content 
+    # end
+
     def to_markdown
       build_styles_hash
       build_footnotes_hash
@@ -205,8 +241,6 @@ module Hwpx2md
       stream.rewind
       stream
     end
-
-    alias text to_s
 
     def replace_entry(entry_path, file_contents)
       @replace[entry_path] = file_contents

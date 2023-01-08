@@ -9,10 +9,7 @@ module Hwpx2md
         include Elements::Element
         attr_reader :paragraph_footnotes, :footnote_number
         attr_reader :text_with_footnote
-        def self.tag
-          'p'
-        end
-
+        
 
         # Child elements: pPr, r, fldSimple, hlink, subDoc
         # http://msdn.microsoft.com/en-us/library/office/ee364458(v=office.11).aspx
@@ -24,133 +21,73 @@ module Hwpx2md
           @paragraph_footnotes = []
         end
 
-        # Set text of paragraph
-        def text=(content)
-          if text_runs.size == 1
-            text_runs.first.text = content
-          elsif text_runs.size == 0
-            new_r = TextRun.create_within(self)
-            new_r.text = content
-          else
-            text_runs.each {|r| r.node.remove }
-            new_r = TextRun.create_within(self)
-            new_r.text = content
+        def self.tag
+          'p'
+        end
+
+
+        # Array of text runs contained within paragraph
+        def text_runs
+          runs = @node.xpath('.//hp:run')
+          runs.map do |r|
+            text_nodes = r.xpath('.//hp:t|.//hp:ctrl//hp:footNote')
+            text_nodes.each do  |t_node|
+              if t_node.name == 't'
+                Containers::TextRun.new(t_node, @document_properties) 
+              elsif t_node.name =='footNote'
+                Containers::FootnoteNode.new(t_node, @document_properties) 
+              elsif t_node.name =='script'
+                Containers::MathNode.new(t_node, @document_properties) 
+              end
+            end
           end
+        end
+
+        def to_txt(document)
+          @para_footnote_numbers = []
+          @para_footnotes = []
+          @para_text = ""
+          runs = @node.xpath('.//hp:run')
+          runs.each do |run|
+            t_nodes = run.xpath('.//hp:ctrl//hp:footNote|.//hp:t')
+            t_nodes.each do |t_node|
+              if t_node.path =~/hp:footNote/
+                ctrl_node = t_node.parent
+                auto_num_node = ctrl_node.at_xpath('.//hp:autoNum')
+                auto_num_node_path = auto_num_node.path
+                footnote_number = auto_num_node.attributes['num'].value
+                unless @para_footnote_numbers.include?(footnote_number)
+                  @para_text.chomp!
+                  @para_text += "[^#{footnote_number}]"
+                  @para_footnote_numbers << footnote_number
+                end
+                footnote_text_node = ctrl_node.at_xpath('.//hp:t')
+                footnote_info = []
+                node_path = footnote_text_node.path
+                footnote_info << node_path
+                footnote_info << footnote_number
+                footnote_info << footnote_text_node.content
+                para_footnote_nodes_path =  @para_footnotes.map{|e| e[0]}
+                unless para_footnote_nodes_path.include?(node_path)
+                  @para_footnotes  << footnote_info
+                end
+              else
+                @para_text += t_node.content
+                @para_text += "\n"
+              end
+            end
+          end
+          @para_footnotes.each_with_index do |footnote, i|
+            @para_text += "\n" if i == 0
+            @para_text += "[^#{footnote[1]}]:#{footnote[2]}\n"
+            @para_text +="\n"
+          end
+          @para_text 
         end
 
         # Return text of paragraph
         def to_s
           text_runs.map(&:text).join('')
-        end
-
-        # Return paragraph as a <p></p> HTML fragment with formatting based on properties.
-        def to_html
-          html = ''
-          text_runs.each do |text_run|
-            html << text_run.to_html
-          end
-          styles = { 'font-size' => "#{font_size}pt" }
-          styles['text-align'] = alignment if alignment
-          html_tag(:p, content: html, styles: styles)
-        end
-
-        def to_txt(document)
-          footnotes_hash  = document.footnotes_hash
-          footnote_number  = document.footnote_number
-          text = ''
-          text_runs.each do |text_run|
-            md = text_run.to_markdown
-            if md=~/\[\^(\d+?)\]/
-              footnote_id = $1
-              md = "[^#{footnote_number}]"
-              footnote_descrption_text =  footnotes_hash[footnote_id]
-              footnote_descrption  = "[^#{footnote_number}]: #{footnote_descrption_text}"
-              footnote_number += 1
-              @paragraph_footnotes << footnote_descrption
-              text += md
-            else
-              text += md
-            end
-          end
-          text
-        end
-
-        def to_markdown(document)
-          styles_hash  = document.styles_hash
-          footnotes_hash  = document.footnotes_hash
-          footnote_number  = document.footnote_number
-          text = ''
-          text_runs.each do |text_run|
-            md = text_run.to_markdown
-            if md=~/\[\^(\d+?)\]/
-              footnote_id = $1
-              md = "[^#{footnote_number}]"
-              footnote_descrption_text =  footnotes_hash[footnote_id]
-              footnote_descrption  = "[^#{footnote_number}]: #{footnote_descrption_text}"
-              footnote_number += 1
-              @paragraph_footnotes << footnote_descrption
-              text += md
-            else
-              text += md
-            end
-          end
-          para_style_node =  @node.xpath('w:pPr/w:pStyle')
-          style_id = para_style_node.attribute('val').value
-          style_name = styles_hash[style_id]
-          markdown_tag(paragraph_style_name,  text)
-        end
-
-        # we use `` mark to indicate blockquote
-        # so, convert it to blockquote
-        def convert_to_markdown(text)
-          if text=~/``/
-            content = text.split("\n").map do |line|
-              "> #{line}"
-            end
-            content = content.join("\n")
-          else
-            text += "\n"
-          end
-        end
-
-        def markdown_tag(paragraph_style_name,  text)
-          markup = ""
-          content = text
-          case paragraph_style_name
-          when "Heading 1", "장제목"
-            markup = "# "
-          when "Heading 2", /좌즉/
-            markup = "## "
-          when "Heading 3", /우측/
-            markup = "### "
-            when "Heading 4"
-            markup = "#### "
-          when "Heading 5"
-            markup = "##### "
-          when "Heading 6"
-            markup = "###### "
-          when "Block Text", /인용/
-            markup = ""
-            content = text.split("\n").map do |line|
-              "> #{line}"
-            end
-            content = content.join("\n")
-          else
-            markup = ""
-          end
-          para_text = markup + content + "\n"
-          @paragraph_footnotes.each_with_index do |note, i|
-            para_text += "\n"
-            para_text += "#{note}"
-            para_text += "\n"
-          end
-          para_text
-        end
-        
-
-        # Array of text runs contained within paragraph
-        def text_runs
-          @node.xpath('w:r|w:hyperlink').map { |r_node| Containers::TextRun.new(r_node, @document_properties) }
         end
 
         # Iterate over each text run within a paragraph
@@ -184,7 +121,6 @@ module Hwpx2md
           alignment_tag = @node.xpath('.//w:jc').first
           alignment_tag ? alignment_tag.attributes['val'].value : nil
         end
-
       end
     end
   end

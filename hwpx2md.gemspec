@@ -5,8 +5,8 @@ Gem::Specification.new do |s|
   s.name        = 'hwpx2md'
   s.version     = Hwpx2md::VERSION
   s.licenses    = ['MIT']
-  s.summary     = 'a ruby library/gem for converting docx files to markdown'
-  s.description = 'thin wrapper around rubyzip and nokogiri as a way to get started with docx files'
+  s.summary     = 'a ruby library/gem for converting hwpx files to markdown'
+  s.description = 'thin wrapper around rubyzip and nokogiri as a way to get started with hwpx files'
   s.authors     = ['Min Soo Kim']
   s.email       = ['mskim@gmail.com']
   s.homepage    = 'https://github.com/mskim/hwpx2md'
@@ -18,5 +18,4 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'coveralls_reborn', '~> 0.21'
   s.add_development_dependency 'rake', '~> 13.0'
-  s.add_development_dependency 'rspec', '~> 3.7'
 end

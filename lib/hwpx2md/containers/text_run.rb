@@ -14,7 +14,7 @@ module Hwpx2md
         }
 
         def self.tag
-          'r'
+          'hp:t'
         end
 
         attr_reader :text
@@ -23,10 +23,10 @@ module Hwpx2md
 
         def initialize(node, document_properties = {})
           @node = node
-          @text_nodes = @node.xpath('w:t').map {|t_node| Elements::Text.new(t_node) }
-          @text_nodes = @node.xpath('w:t|w:r/w:t').map {|t_node| Elements::Text.new(t_node) }
+          @text_nodes = @node.xpath('.//hp:t').map {|t_node| Elements::Text.new(t_node) }
+          # @text_nodes = @node.xpath('w:t|w:r/w:t').map {|t_node| Elements::Text.new(t_node) }
 
-          @properties_tag = 'rPr'
+          @properties_tag = 'hp:t'
           @text       = parse_text || ''
           @formatting = parse_formatting || DEFAULT_FORMATTING
           @document_properties = document_properties
@@ -46,7 +46,7 @@ module Hwpx2md
 
         # Returns text contained within text run
         def parse_text
-          @text_nodes.map(&:content).join('')
+          @text_nodes.map(&:content).join("\n")
         end
 
         # Substitute text in text @text_nodes
@@ -59,9 +59,10 @@ module Hwpx2md
 
         def parse_formatting
           {
-            italic:    !@node.xpath('.//w:i').empty?,
-            bold:      !@node.xpath('.//w:b').empty?,
-            underline: !@node.xpath('.//w:u').empty?,
+            # TODO:
+            # italic:    !@node.xpath('.//w:i').empty?,
+            # bold:      !@node.xpath('.//w:b').empty?,
+            # underline: !@node.xpath('.//w:u').empty?,
           }
         end
 
@@ -83,6 +84,17 @@ module Hwpx2md
           return html
         end
         
+        def to_txt
+          markdwon = @text
+          if italicized?
+            "*" + markdwon + "*"
+          elsif bolded?
+            "**" + markdwon + "**"
+          end
+          markdwon
+
+        end
+
         def to_markdown
           v_align_node = @node.at_xpath('.//w:vertAlign')
           if v_align_node
