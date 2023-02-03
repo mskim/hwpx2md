@@ -25,6 +25,12 @@ module Hwpx2md
       document = @zip.glob('Contents/section*.xml').first
       raise Errno::ENOENT if document.nil?
       @document_xml = document.get_input_stream.read
+      
+      # remove
+      # </hp:t></hp:run><hp:run charPrIDRef="16"><hp:t>
+      # </hp:t></hp:run><hp:run charPrIDRef="17"><hp:t>
+      @document_xml.gsub!(/<\/hp\:t><\/hp\:run><hp\:run charPrIDRef=\"\d+\"><hp\:t>/, "")
+      # @document_xml.gsub!(/</hp:t></hp:run><hp:run charPrIDRef=\"\d\d\"><hp:t>/, "")
       @doc = Nokogiri::XML(@document_xml)
       # load_styles
       yield(self) if block_given?

@@ -44,6 +44,7 @@ module Hwpx2md
         end
 
         def to_txt(document)
+
           @para_footnote_numbers = []
           @para_footnotes = []
           @para_text = ""
@@ -54,8 +55,6 @@ module Hwpx2md
               if t_node.path =~/hp:footNote/
                 ctrl_node = t_node.parent
                 auto_num_node = ctrl_node.at_xpath('.//hp:autoNum')
-                # binding.pry unless  auto_num_node
-                # ignore node if it does not have autoNum
                 next unless  auto_num_node
                 auto_num_node_path = auto_num_node.path
                 footnote_number = auto_num_node.attributes['num'].value
