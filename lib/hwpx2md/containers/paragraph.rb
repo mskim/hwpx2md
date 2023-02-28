@@ -44,7 +44,6 @@ module Hwpx2md
         end
 
         def to_txt(document)
-
           @para_footnote_numbers = []
           @para_footnotes = []
           @para_text = ""
@@ -84,7 +83,9 @@ module Hwpx2md
             @para_text += "[^#{footnote[1]}]:#{footnote[2]}\n"
             @para_text +="\n"
           end
-          @para_text 
+          @para_text.gsub!("**\n", "**")
+          @para_text.gsub!("\n!**", "!**")
+          @para_text
         end
 
         # Return text of paragraph

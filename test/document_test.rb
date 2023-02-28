@@ -7,10 +7,10 @@ describe 'parse paul_and_j.hwpx' do
   before do
     # @hwpx_path = File.dirname(__FILE__) + '/book.hwpx'
     # @txt_path = File.dirname(__FILE__) + '/book.txt'
-    @hwpx_path = File.dirname(__FILE__) + '/paul.hwpx'
-    @txt_path = File.dirname(__FILE__) + '/paul.txt'
-    # @hwpx_path = File.dirname(__FILE__) + '/book.hwpx'
-    # @txt_path = File.dirname(__FILE__) + '/book.txt'
+    # @hwpx_path = File.dirname(__FILE__) + '/paul.hwpx'
+    # @txt_path = File.dirname(__FILE__) + '/paul.txt'
+    @hwpx_path = File.dirname(__FILE__) + '/dos.hwpx'
+    @txt_path = File.dirname(__FILE__) + '/dos.txt'
     doc = Hwpx2md::Document.open(@hwpx_path)
     txt = doc.to_txt
     File.open(@txt_path,'w'){|f| f.write txt }

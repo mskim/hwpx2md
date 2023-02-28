@@ -31,6 +31,11 @@ module Hwpx2md
       # </hp:t></hp:run><hp:run charPrIDRef="17"><hp:t>
       @document_xml.gsub!(/<\/hp\:t><\/hp\:run><hp\:run charPrIDRef=\"\d+\"><hp\:t>/, "")
       # @document_xml.gsub!(/</hp:t></hp:run><hp:run charPrIDRef=\"\d\d\"><hp:t>/, "")
+      # binding.pry if @document_xml =~/\*\*<\/hp:t><hp:t\scharStyleIDRef=\"\d\d\">/
+      @document_xml.gsub!(/<\/hp:t><hp:t\scharStyleIDRef=\"\d\d\">/, "")
+      @document_xml.gsub!(/<\/hp:t><hp:t>\*\*/, "**")
+      # path = File.expand_path("~/test/doc_test.xml")
+      # File.write(path, @document_xml)
       @doc = Nokogiri::XML(@document_xml)
       # load_styles
       yield(self) if block_given?
@@ -117,56 +122,6 @@ module Hwpx2md
       @txt_content.gsub!("\n\n\n", "\n\n")
       @txt_content
     end
-
-    # def to_txt
-    #   @txt_content = ""
-    #   secs = @doc.xpath('.//hs:sec')
-    #   @para_footnotes = []
-    #   @para_footnote_numbers  = []
-    #   secs.each do |sec|
-    #     paragraphs = sec.xpath('.//hp:p')
-    #     paragraphs.each do |para|
-    #       @para_text = ""
-    #       runs = para.xpath('.//hp:run')
-    #       runs.each do |run|
-    #         t_nodes = run.xpath('.//hp:ctrl//hp:footNote|.//hp:t')
-    #         t_nodes.each do |t_node|
-    #           if t_node.path =~/hp:footNote/
-    #             ctrl_node = t_node.parent
-    #             auto_num_node = ctrl_node.at_xpath('.//hp:autoNum')
-    #             auto_num_node_path = auto_num_node.path
-    #             footnote_number = auto_num_node.attributes['num'].value
-    #             unless @para_footnote_numbers.include?(footnote_number)
-    #               @para_text.chomp!
-    #               @para_text += "[^#{footnote_number}]"
-    #               @para_footnote_numbers << footnote_number
-    #             end
-    #             footnote_text_node = ctrl_node.at_xpath('.//hp:t')
-    #             footnote_info = []
-    #             node_path = footnote_text_node.path
-    #             footnote_info << node_path
-    #             footnote_info << footnote_number
-    #             footnote_info << footnote_text_node.content
-    #             para_footnote_nodes_path =  @para_footnotes.map{|e| e[0]}
-    #             unless para_footnote_nodes_path.include?(node_path)
-    #               @para_footnotes  << footnote_info
-    #             end
-    #           else
-    #             @para_text += t_node.content
-    #             @para_text += "\n"
-    #           end
-    #         end
-    #       end
-    #       @txt_content += @para_text
-    #     end
-    #   end
-    #   @txt_content 
-    #   @txt_content += "\n"
-    #   # @para_footnotes.each_with_index do |footnote, i|
-    #   #   @txt_content += "[^#{footnote[1]}]:#{footnote[2]}\n\n"
-    #   # end
-    #   @txt_content 
-    # end
 
     def to_markdown
       build_styles_hash

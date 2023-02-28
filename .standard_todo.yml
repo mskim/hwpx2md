@@ -1,0 +1,146 @@
+# Auto generated files with errors to ignore.
+# Remove from this list as you refactor files.
+---
+ignore:
+- Gemfile:
+  - Style/StringLiterals
+  - Layout/TrailingEmptyLines
+- Rakefile:
+  - Style/StringLiterals
+- hwpx2md.gemspec:
+  - Style/StringLiterals
+  - Layout/ExtraSpacing
+- lib/hwpx2md.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Layout/LeadingCommentSpace
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/containers.rb:
+  - Style/StringLiterals
+- lib/hwpx2md/containers/container.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Layout/SpaceInsideBlockBraces
+- lib/hwpx2md/containers/footnote_node.rb:
+  - Layout/TrailingWhitespace
+  - Style/StringLiterals
+  - Layout/EmptyLinesAroundModuleBody
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/containers/image_node.rb:
+  - Layout/EmptyLinesAroundClassBody
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/containers/math_node.rb:
+  - Layout/TrailingWhitespace
+  - Layout/SpaceAroundEqualsInParameterDefault
+  - Lint/Void
+  - Layout/EmptyLinesAroundMethodBody
+  - Layout/EmptyLinesAroundClassBody
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/containers/paragraph.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Layout/TrailingWhitespace
+  - Layout/EmptyLineBetweenDefs
+  - Layout/ExtraSpacing
+  - Layout/SpaceAroundOperators
+  - Layout/EmptyLinesAroundMethodBody
+  - Performance/RegexpMatch
+  - Lint/UselessAssignment
+  - Layout/SpaceBeforeBlockBraces
+  - Layout/SpaceInsideBlockBraces
+- lib/hwpx2md/containers/table.rb:
+  - Style/StringLiterals
+  - Layout/SpaceInsideBlockBraces
+  - Layout/SpaceAroundOperators
+  - Layout/TrailingWhitespace
+- lib/hwpx2md/containers/table_cell.rb:
+  - Style/StringLiterals
+  - Layout/SpaceInsideBlockBraces
+  - Layout/TrailingWhitespace
+- lib/hwpx2md/containers/table_column.rb:
+  - Style/StringLiterals
+  - Style/TrivialAccessors
+  - Layout/TrailingWhitespace
+- lib/hwpx2md/containers/table_row.rb:
+  - Style/StringLiterals
+  - Layout/SpaceInsideBlockBraces
+  - Layout/TrailingWhitespace
+- lib/hwpx2md/containers/text_run.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Layout/HashAlignment
+  - Layout/SpaceInsideBlockBraces
+  - Layout/ExtraSpacing
+  - Style/RedundantReturn
+  - Layout/TrailingWhitespace
+  - Layout/EmptyLinesAroundMethodBody
+- lib/hwpx2md/core_ext/module.rb:
+  - Performance/StringIdentifierArgument
+  - Lint/AssignmentInCondition
+  - Style/StringLiterals
+  - Style/TernaryParentheses
+  - Performance/Caller
+  - Style/EvalWithLocation
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/document.rb:
+  - Style/StringLiterals
+  - Layout/TrailingWhitespace
+  - Style/ConditionalAssignment
+  - Style/ParenthesesAroundCondition
+  - Style/RedundantRegexpEscape
+  - Style/TrailingCommaInHashLiteral
+  - Layout/SpaceBeforeBlockBraces
+  - Layout/SpaceInsideBlockBraces
+  - Layout/SpaceAroundOperators
+  - Layout/ExtraSpacing
+  - Performance/Detect
+  - Style/RedundantCondition
+  - Layout/EmptyLines
+  - Layout/EmptyLineBetweenDefs
+- lib/hwpx2md/elements.rb:
+  - Style/StringLiterals
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/elements/bookmark.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Style/RedundantSelf
+  - Style/For
+  - Style/Not
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/elements/element.rb:
+  - Layout/EndOfLine
+  - Style/StringLiterals
+  - Style/HashSyntax
+  - Lint/RedundantStringCoercion
+  - Layout/TrailingWhitespace
+  - Style/StringLiteralsInInterpolation
+  - Style/RedundantSelf
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/elements/text.rb:
+  - Style/HashSyntax
+  - Style/StringLiterals
+  - Layout/EmptyLines
+  - Layout/EmptyLineBetweenDefs
+  - Layout/TrailingEmptyLines
+- lib/hwpx2md/version.rb:
+  - Layout/EndOfLine
+  - Layout/LeadingCommentSpace
+  - Style/StringLiterals
+- test/book_unzip_docx.rb:
+  - Style/StringLiterals
+- test/document_test.rb:
+  - Layout/TrailingWhitespace
+  - Style/StringLiterals
+  - Style/FileWrite
+  - Layout/SpaceAfterComma
+  - Layout/SpaceBeforeBlockBraces
+  - Layout/SpaceInsideBlockBraces
+  - Layout/EmptyLinesAroundBlockBody
+  - Layout/EmptyLines
+  - Layout/TrailingEmptyLines
+- test/nokogiri_sample.rb:
+  - Lint/Syntax
+- test/test_helper.rb:
+  - Style/Encoding
+  - Style/StringLiterals
+  - Style/MixinUsage
