@@ -5,6 +5,7 @@ require 'hwpx2md/containers/container'
 module Hwpx2md
   module Elements
     module Containers
+      #  table
       class Table
         include Container
         include Elements::Element
@@ -20,7 +21,7 @@ module Hwpx2md
 
         # Array of row
         def rows
-          @node.xpath('w:tr').map {|r_node| Containers::TableRow.new(r_node) }
+          @node.xpath('w:tr').map { |r_node| Containers::TableRow.new(r_node) }
         end
 
         def row_count
@@ -30,8 +31,8 @@ module Hwpx2md
         # Array of column
         def columns
           columns_containers = []
-          (0..(column_count-1)).each do |i|
-            columns_containers[i] = Containers::TableColumn.new @node.xpath("w:tr//w:tc[#{i+1}]")
+          (0..(column_count - 1)).each do |i|
+            columns_containers[i] = Containers::TableColumn.new @node.xpath("w:tr//w:tc[#{i + 1}]")
           end
           columns_containers
         end
@@ -41,10 +42,9 @@ module Hwpx2md
         end
 
         # Iterate over each row within a table
-        def each_rows
-          rows.each { |r| yield(r) }
+        def each_rows(&block)
+          rows.each(&block)
         end
-        
       end
     end
   end

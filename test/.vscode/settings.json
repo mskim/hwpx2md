@@ -1,0 +1,4 @@
+{
+  "xmlTools.enforcePrettySelfClosingTagOnFormat": true,
+  "xmlTools.enableXmlTreeViewCursorSync": true
+}
