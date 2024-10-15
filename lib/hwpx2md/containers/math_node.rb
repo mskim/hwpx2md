@@ -6,10 +6,11 @@ module Hwpx2md
         include Elements::Element
         
         attr_reader :math_format
-
+        attr_reader :latex
         def initialize(node, options={})
           @node = node
-          @math_format = options[:math_format] || :latex
+          @eqn = @node.text
+          @latex = eq2latex(@eqn)
           self
         end
 
