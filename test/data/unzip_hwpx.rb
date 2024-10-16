@@ -12,8 +12,12 @@ def unzip_hwpx(hwpc_file_path)
     }
   }
 end
-hwpc_folder = File.dirname(__FILE__)
 
-Dir["#{hwpc_folder}/*.hwpx"].each do |hwpx|
-  unzip_hwpx(hwpx)
-end
+
+hwpc_folder = File.dirname(__FILE__)
+# Dir["#{hwpc_folder}/*.hwpx"].each do |hwpx|
+#   unzip_hwpx(hwpx)
+# end
+
+hwpc_file_path = hwpc_folder + "/sample_math.hwpx"
+unzip_hwpx(hwpc_file_path)

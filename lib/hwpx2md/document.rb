@@ -12,7 +12,7 @@ module Hwpx2md
     attr_accessor :text_with_footnote
     attr_reader :para_footnote_numbers, :para_footnotes
     attr_reader :txt_content
-    
+    attr_reader :zip
     def initialize(path_or_io, options = {})
       @replace = {}
 
@@ -40,7 +40,7 @@ module Hwpx2md
       # load_styles
       yield(self) if block_given?
     ensure
-      @zip.close
+      @zip.close if @zip
     end
 
     # This stores the current global document properties, for now

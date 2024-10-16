@@ -5,4 +5,9 @@ module Hwpx2md #:nodoc:
 end
 
 require 'hwpx2md/core_ext/module'
-require 'pry-byebug'
+# require 'eq_to_latext'
+require 'byebug'
+# require "eq_to_latex/version"
+require_relative 'eq_to_latex/syntax'
+require_relative 'eq_to_latex/processor'
+require_relative 'eq_to_latex/converter'

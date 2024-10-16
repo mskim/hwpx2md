@@ -61,6 +61,10 @@ module Hwpx2md
           end
         end
 
+        def eq2latex(eq_string)
+          latex = EqToLatex::Converter.new.convert(eq_string)
+        end
+
         def to_txt(_document)
           @para_footnote_numbers = []
           @para_footnotes = []
@@ -68,7 +72,7 @@ module Hwpx2md
           para_nodes = @node.xpath(".//hp:run|.//hp:linesegarray")
           para_nodes.each do |para_run|
             if para_run.path =~ /hp:run/
-              run_nodes = para_run.xpath(".//hp:ctrl|.//hp:t")
+              run_nodes = para_run.xpath(".//hp:ctrl|.//hp:t|.//hp:script")
               run_nodes.each do |run_node|
                 if run_node.path =~ /hp:ctrl/
                   ctrl_node = run_node
@@ -100,8 +104,12 @@ module Hwpx2md
                       # binding.pry
                     end
                   end
-                elsif run_node.path =~ /hp:t/
+                # elsif run_node.path =~ /hp:t/
+                elsif run_node.name == 't'
                   @para_text += run_node.content
+                elsif run_node.name == 'script'
+                  latex = eq2latex(run_node.content)
+                  @para_text += "#{latex}"
                 end
               end
             elsif para_run.path =~ /hp:linesegarray/
