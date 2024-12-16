@@ -1,12 +1,41 @@
 ## 1.다음의 문제를 푸세요 
 
-this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. 
+### 1. $\dfrac {3x}{y+z+b}$
 
-this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. 
+### 2. $\dfrac {3x}{y+z+b}$
 
-this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. 
+### 3. $\dfrac {3x}{y+z+b}$
+
+### 4. $\dfrac {3x}{y+z+b}$
 
 
-this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. 
+## 1. 다음의 문제를 푸세요 
 
-this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. this is some body text here. 
+### 1. $\dfrac {3x}{y+z+b}$
+
+
+### 2. $\dfrac {3x}{y+z+b}$
+
+
+
+### 3. $\dfrac {3x}{y+z+b}$
+
+
+### 4. $\dfrac {3x}{y+z+b}$
+
+
+## 1.다음의 문제를 푸세요 
+
+### 1. $\dfrac {3x}{y+z+b}$
+
+
+### 2. $\dfrac {3x}{y+z+b}$
+
+
+
+### 3. $\dfrac {3x}{y+z+b}$
+
+
+
+### 4. $\dfrac {3x}{y+z+b}$
+

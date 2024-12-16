@@ -32,8 +32,8 @@ module Hwpx2md
       @document_xml.gsub!(/<\/hp\:t><\/hp\:run><hp\:run charPrIDRef=\"\d+\"><hp\:t>/, "")
       # @document_xml.gsub!(/</hp:t></hp:run><hp:run charPrIDRef=\"\d\d\"><hp:t>/, "")
       # binding.pry if @document_xml =~/\*\*<\/hp:t><hp:t\scharStyleIDRef=\"\d\d\">/
-      @document_xml.gsub!(/<\/hp:t><hp:t\scharStyleIDRef=\"\d\d\">/, "")
-      @document_xml.gsub!(/<\/hp:t><hp:t>\*\*/, "**")
+      @document_xml.gsub!(/<\/hp\:t><hp\:t\scharStyleIDRef=\"\d\d\">/, "")
+      @document_xml.gsub!(/<\/hp\:t><hp\:t>\*\*/, "**")
       # path = File.expand_path("~/test/doc_test.xml")
       # File.write(path, @document_xml)
       @doc = Nokogiri::XML(@document_xml)
@@ -77,7 +77,7 @@ module Hwpx2md
     end
 
     def tables
-      @doc.xpath('//w:document//w:body//w:tbl').map { |t_node| parse_table_from t_node }
+      @doc.xpath('//hs:sec//hp:tbl').map { |t_node| parse_table_from t_node }
     end
 
     # Some documents have this set, others don't.
@@ -117,17 +117,81 @@ module Hwpx2md
     end
 
     def to_txt
-      @txt_content = paragraphs.map{|p| p.to_txt(self)}.join("\n")
-      @txt_content.gsub!("\n\n\n\n", "\n\n")
-      @txt_content.gsub!("\n\n\n", "\n\n")
-      @txt_content
+      content = []
+      @doc.xpath('//hs:sec/*').each do |node|
+        case node.name
+        when 'p'
+          # Check if paragraph contains a table
+          table_node = node.at_xpath('.//hp:tbl')
+          if table_node
+            content << parse_table_from(table_node).to_markdown
+          else
+            content << parse_paragraph_from(node).to_txt(self)
+          end
+        end
+      end
+      content.join("\n")
     end
 
     def to_markdown
-      build_styles_hash
-      build_footnotes_hash
-      @footnote_number = 1
-      paragraphs.map{|p| p.to_markdown(self)}.join("\n")
+      to_txt
+    end
+
+    def to_html
+      content = to_txt
+      require 'kramdown'
+      html_content = Kramdown::Document.new(content).to_html
+      <<~HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>#{File.basename(@zip.name, '.*')}</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          #{html_content}
+        </body>
+        </html>
+      HTML
+    end
+
+    def save_as_markdown(path = nil)
+      # If no path provided, use the same name as input file but with .md extension
+      unless path
+        if @zip.name.is_a?(String)
+          path = @zip.name.sub(/\.hwpx$/, '.md')
+        else
+          raise ArgumentError, "Path must be provided when input is not a file"
+        end
+      end
+      
+      # Convert and save content with UTF-8 encoding
+      content = to_txt
+      File.write(path, content, encoding: 'UTF-8')
+      path
+    end
+
+    def save_as_html(path = nil)
+      # If no path provided, use the same name as input file but with .html extension
+      unless path
+        if @zip.name.is_a?(String)
+          path = @zip.name.sub(/\.hwpx$/, '.html')
+        else
+          raise ArgumentError, "Path must be provided when input is not a file"
+        end
+      end
+      
+      # Convert and save content with UTF-8 encoding
+      content = to_html
+      File.write(path, content, encoding: 'UTF-8')
+      path
     end
 
     def build_styles_hash
