@@ -6,16 +6,20 @@ Gem::Specification.new do |s|
   s.version     = Hwpx2md::VERSION
   s.licenses    = ['MIT']
   s.summary     = 'a ruby library/gem for converting hwpx files to markdown'
-  s.description = 'thin wrapper around rubyzip and nokogiri as a way to get started with hwpx files'
+  s.description = 'Convert HWPX (Hancom Office) files to Markdown or HTML. Supports tables, math equations (LaTeX), images, and style extraction.'
   s.authors     = ['Min Soo Kim']
   s.email       = ['mskim@gmail.com']
   s.homepage    = 'https://github.com/mskim/hwpx2md'
-  s.files       = Dir['README.md', 'LICENSE.md', 'lib/**/*.rb']
-  s.required_ruby_version = '>= 2.6.0'
+  s.files       = Dir['README.md', 'LICENSE.md', 'lib/**/*.rb', 'bin/*']
+  s.bindir      = 'bin'
+  s.executables = ['hwpx2md']
+  s.required_ruby_version = '>= 3.1.0'
 
-  s.add_dependency 'nokogiri', '~> 1.13', '>= 1.13.0'
-  s.add_dependency 'rubyzip',  '= 3.0.0'
+  s.add_dependency 'nokogiri', '~> 1.18'
+  s.add_dependency 'rubyzip',  '~> 3.2'
+  s.add_dependency 'kramdown', '~> 2.5'
 
-  s.add_development_dependency 'coveralls_reborn', '~> 0.21'
-  s.add_development_dependency 'rake', '~> 13.0'
+  s.add_development_dependency 'minitest', '~> 5.25'
+  s.add_development_dependency 'rake', '~> 13.2'
+  s.add_development_dependency 'debug', '~> 1.9'
 end

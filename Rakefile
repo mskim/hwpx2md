@@ -1,11 +1,15 @@
 require 'rake'
-require 'rspec/core/rake_task'
+require 'rake/testtask'
 require 'bundler/gem_tasks'
 
-RSpec::Core::RakeTask.new('spec')
+Rake::TestTask.new(:test) do |t|
+  t.libs << 'test'
+  t.libs << 'lib'
+  t.test_files = FileList['test/**/test_*.rb']
+end
 
 desc 'Run tests.'
-task default: :spec
+task default: :test
 
 desc "Open an irb session preloaded with this library."
 task :console do

@@ -1,10 +1,13 @@
 require 'hwpx2md/containers'
 require 'hwpx2md/elements'
+require 'hwpx2md/image_extractor'
+require 'hwpx2md/style_extractor'
 require 'nokogiri'
 require 'zip'
+require 'fileutils'
 
 module Hwpx2md
- 
+
   class Document
     attr_reader :xml, :doc, :zip, :styles
     attr_reader :styles_hash, :footnotes_hash
@@ -12,7 +15,8 @@ module Hwpx2md
     attr_accessor :text_with_footnote
     attr_reader :para_footnote_numbers, :para_footnotes
     attr_reader :txt_content
-    attr_reader :zip
+    attr_reader :zip, :image_extractor, :style_extractor
+
     def initialize(path_or_io, options = {})
       @replace = {}
 
@@ -38,9 +42,87 @@ module Hwpx2md
       # File.write(path, @document_xml)
       @doc = Nokogiri::XML(@document_xml)
       # load_styles
+      load_header
+      init_image_extractor
+      init_style_extractor
       yield(self) if block_given?
     ensure
       @zip.close if @zip
+    end
+
+    # Check if document contains images
+    def has_images?
+      @image_extractor&.has_images? || false
+    end
+
+    # Get count of images in document
+    def image_count
+      @image_extractor&.count || 0
+    end
+
+    # Extract images to specified directory
+    #
+    # @param output_dir [String] Directory to save images (default: "images" relative to document)
+    # @param naming [Symbol] Naming convention (:descriptive, :sequential, :original)
+    # @return [Hash] Map of bin_item_id to extracted file path
+    def extract_images(output_dir = nil, naming: :descriptive)
+      return {} unless has_images?
+
+      output_dir ||= default_images_dir
+      @image_extractor.extract_to(output_dir, naming: naming)
+    end
+
+    # Extract styles to specified directory as YAML files
+    #
+    # @param output_dir [String] Directory to save style files (default: "styles" relative to document)
+    # @return [Array<String>] List of created files
+    def extract_styles(output_dir = nil)
+      return [] unless @style_extractor
+
+      output_dir ||= default_styles_dir
+      @style_extractor.save_to(output_dir)
+    end
+
+    # Get all styles as a hash
+    #
+    # @return [Hash] All document styles
+    def styles_to_hash
+      @style_extractor&.to_hash || {}
+    end
+
+    # Get all styles as YAML string
+    #
+    # @return [String] YAML representation of all styles
+    def styles_to_yaml
+      @style_extractor&.to_yaml || ""
+    end
+
+    # Get page properties (size, margins, etc.)
+    #
+    # @return [Hash] Page properties
+    def page_properties
+      @style_extractor&.document_properties || {}
+    end
+
+    # Get paragraph styles
+    #
+    # @return [Array<Hash>] List of paragraph styles
+    def paragraph_styles
+      @style_extractor&.paragraph_styles || []
+    end
+
+    # Get character styles
+    #
+    # @return [Array<Hash>] List of character styles
+    def character_styles
+      @style_extractor&.character_styles || []
+    end
+
+    # Get font definitions
+    #
+    # @return [Hash] Font definitions by language
+    def font_definitions
+      @style_extractor&.fonts || {}
     end
 
     # This stores the current global document properties, for now
@@ -118,6 +200,8 @@ module Hwpx2md
 
     def to_txt
       content = []
+      image_paths = @image_extractor&.relative_paths || {}
+
       @doc.xpath('//hs:sec/*').each do |node|
         case node.name
         when 'p'
@@ -126,7 +210,17 @@ module Hwpx2md
           if table_node
             content << parse_table_from(table_node).to_markdown
           else
-            content << parse_paragraph_from(node).to_txt(self)
+            # Check for images in paragraph
+            pic_nodes = node.xpath('.//hp:pic')
+            pic_nodes.each do |pic_node|
+              image_node = Elements::Containers::ImageNode.new(pic_node, bin_items: @image_extractor&.bin_items || {})
+              if image_node.valid? && image_paths[image_node.bin_item_id]
+                content << image_node.to_markdown(image_paths[image_node.bin_item_id])
+              end
+            end
+            # Add paragraph text
+            para_text = parse_paragraph_from(node).to_txt(self)
+            content << para_text unless para_text.strip.empty? && pic_nodes.any?
           end
         end
       end
@@ -162,7 +256,7 @@ module Hwpx2md
       HTML
     end
 
-    def save_as_markdown(path = nil)
+    def save_as_markdown(path = nil, extract_images: true)
       # If no path provided, use the same name as input file but with .md extension
       unless path
         if @zip.name.is_a?(String)
@@ -171,14 +265,20 @@ module Hwpx2md
           raise ArgumentError, "Path must be provided when input is not a file"
         end
       end
-      
+
+      # Extract images if present
+      if extract_images && has_images?
+        images_dir = File.join(File.dirname(path), "images")
+        extract_images(images_dir)
+      end
+
       # Convert and save content with UTF-8 encoding
       content = to_txt
       File.write(path, content, encoding: 'UTF-8')
       path
     end
 
-    def save_as_html(path = nil)
+    def save_as_html(path = nil, extract_images: true)
       # If no path provided, use the same name as input file but with .html extension
       unless path
         if @zip.name.is_a?(String)
@@ -187,7 +287,13 @@ module Hwpx2md
           raise ArgumentError, "Path must be provided when input is not a file"
         end
       end
-      
+
+      # Extract images if present
+      if extract_images && has_images?
+        images_dir = File.join(File.dirname(path), "images")
+        extract_images(images_dir)
+      end
+
       # Convert and save content with UTF-8 encoding
       content = to_html
       File.write(path, content, encoding: 'UTF-8')
@@ -313,6 +419,49 @@ module Hwpx2md
 
     def parse_table_from(t_node)
       Elements::Containers::Table.new(t_node)
+    end
+
+    # Load header.xml for binary item references
+    def load_header
+      header_entry = @zip.glob('Contents/header.xml').first
+      return unless header_entry
+
+      @header_xml = header_entry.get_input_stream.read
+      @header_doc = Nokogiri::XML(@header_xml)
+    rescue StandardError
+      @header_doc = nil
+    end
+
+    # Initialize image extractor
+    def init_image_extractor
+      @image_extractor = ImageExtractor.new(@zip, @doc, @header_doc)
+    rescue StandardError
+      @image_extractor = nil
+    end
+
+    # Default images directory based on document path
+    def default_images_dir
+      if @zip.name.is_a?(String)
+        File.join(File.dirname(@zip.name), "images")
+      else
+        "images"
+      end
+    end
+
+    # Initialize style extractor
+    def init_style_extractor
+      @style_extractor = StyleExtractor.new(@header_doc, @doc)
+    rescue StandardError
+      @style_extractor = nil
+    end
+
+    # Default styles directory based on document path
+    def default_styles_dir
+      if @zip.name.is_a?(String)
+        File.join(File.dirname(@zip.name), "styles")
+      else
+        "styles"
+      end
     end
   end
 end

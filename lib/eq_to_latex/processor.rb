@@ -1,34 +1,66 @@
-#
-#  Author: osh
-#  Created: 2019-05-27
-#  Last modified: 2019-05-27
+# frozen_string_literal: true
 
 module EqToLatex
+  # Pre and post processing for equation strings
   class Processor
+    # HTML entity mappings
+    HTML_ENTITIES = {
+      "&lt;" => "<",
+      "&gt;" => ">"
+    }.freeze
 
-    # 수식 문자열 전처리
+    # Pre-process equation string before conversion
+    #
+    # @param script [String] Raw equation string
+    # @return [String] Cleaned equation string
     def pre_process(script)
-      # 족보닷컴 텍스트 제거
-      jokbo_regex = %r(from\s*=+\s*(?:족보닷컴[\s\S]*?)=+)
-      script = script.gsub(jokbo_regex, "")
-      # 2개 이상의 공백을 하나의 공백으로 치환
-      script = script.gsub(/\s+/, " ").strip
-      # 백슬래시(로만체)를 로만체 명령어로 변환
-      script = script.gsub(/^\\| \\/, " \\rm ")
-      # 꺽쇠 치환
-      script = script.gsub(/&lt;/, "<")
-      script = script.gsub(/&gt;/, ">")
-      # 위, 아래 첨자 명령어로 변경
-      script = script.gsub(/_/, " sub ")
-      script = script.gsub(/\^/, " sup ")
-
-      return script
+      script = remove_jokbo_watermark(script)
+      script = normalize_whitespace(script)
+      script = convert_backslash_to_roman(script)
+      script = decode_html_entities(script)
+      script = convert_subscript_superscript(script)
+      script
     end
 
-    # 수식 문자열 후처리
+    # Post-process equation string after conversion
+    #
+    # @param script [String] Converted equation string
+    # @return [String] Final cleaned equation string
     def post_process(script)
-      # 2개 이상의 공백을 하나의 공백으로 치환
-      script = script.gsub(/\s+/, " ").strip
+      normalize_whitespace(script)
+    end
+
+    private
+
+    # Remove Jokbo.com watermark text (Korean education site)
+    def remove_jokbo_watermark(script)
+      script.gsub(/from\s*=+\s*(?:족보닷컴[\s\S]*?)=+/, "")
+    end
+
+    # Collapse multiple whitespace to single space
+    def normalize_whitespace(script)
+      script.gsub(/\s+/, " ").strip
+    end
+
+    # Convert backslash prefix to Roman font command
+    # In Hangul equations, \ prefix means Roman (non-italic) text
+    def convert_backslash_to_roman(script)
+      script.gsub(/^\\| \\/, " \\rm ")
+    end
+
+    # Decode HTML entities to actual characters
+    def decode_html_entities(script)
+      HTML_ENTITIES.reduce(script) do |s, (entity, char)|
+        s.gsub(entity, char)
+      end
+    end
+
+    # Convert _ and ^ to sub/sup commands
+    # Hangul equations use these as shortcuts
+    def convert_subscript_superscript(script)
+      script
+        .gsub("_", " sub ")
+        .gsub("^", " sup ")
     end
   end
 end

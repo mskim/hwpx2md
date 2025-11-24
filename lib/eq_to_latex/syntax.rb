@@ -1,1326 +1,472 @@
-#
-#  Author: osh
-#  Created: 2019-05-27
-#  Last modified: 2019-05-27
+# frozen_string_literal: true
 
 module EqToLatex
+  # Syntax definitions for converting Hangul equation script to LaTeX
+  #
+  # Rule Types:
+  # - Keyword Command: No parameters (sum, int)
+  # - Default Command: One right-hand parameter (sub, sup, bar)
+  # - Block Command: begin/end blocks (matrix, cases)
+  # - Meta: Special characters (left, right, newlines)
+  # - Symbol: Mathematical symbols (Greek letters, operators)
+  # - Reserved Word: Function names rendered in Roman font (sin, cos)
   module Syntax
-    # Keyword Command: 파라미터가 없는 명령어
-    # Default Command: 우측에 1개의 파라미터를 가지는 명령어
-    # Block Command: begin/end 블록을 가지는 명령어(행렬, 케이스)
-    # Meta: 공백, 줄바꿈, left right 등 특수문자
-    # Symbol: 기호
-    # Reserved Word: 로만체로 표시되는 예약어
+    module_function
 
+    # Helper to create a rule with case variations
+    def rule(pattern, latex, alphabetic: true)
+      { regex: pattern, latex: latex, alphabetic: alphabetic }.freeze
+    end
+
+    # Helper to create case-insensitive rule (lowercase, Titlecase, UPPERCASE)
+    def ci_rule(word, latex)
+      rule([word.downcase, word.capitalize, word.upcase], latex)
+    end
+
+    # ============================================================
+    # KEYWORD COMMANDS - No parameters
+    # ============================================================
     KEYWORD_COMMANDS = [
-      {
-        regex: ["eqalign", "Eqalign", "EQALIGN"],
-        latex: ""
-      },
-      {
-        regex: ["rm", "Rm", "RM"],
-        latex: " \\rm "
-      },
-      {
-        regex: ["it", "It", "IT"],
-        latex: " \\it "
-      },
-      {
-        regex: ["sum", "Sum", "SUM"],
-        latex: " \\sum "
-      },
-      {
-        regex: ["int(?!er)", "Int(?!er)", "INT(?!ER)"],
-        latex: " \\int "
-      },
-      {
-        regex: ["oint", "Oint", "OINT"],
-        latex: " \\oint "
-      }
-    ]
+      ci_rule("eqalign", ""),
+      ci_rule("rm", " \\rm "),
+      ci_rule("it", " \\it "),
+      ci_rule("sum", " \\sum "),
+      rule(["int(?!er)", "Int(?!er)", "INT(?!ER)"], " \\int "),
+      ci_rule("oint", " \\oint ")
+    ].freeze
 
+    # ============================================================
+    # DEFAULT COMMANDS - One right-hand parameter
+    # ============================================================
     DEFAULT_COMMANDS = [
-      {
-        regex: "sub(?!set)",
-        latex: "_"
-      },
-      {
-        regex: "sup(?!set)",
-        latex: "^"
-      },
-      {
-        regex: "box",
-        latex: "\\fbox"
-      },
-      {
-        regex: "arch",
-        latex: "\\stackrel\\frown"
-      },
-      {
-        regex: "bar",
-        latex: "\\overline"
-      },
-      {
-        regex: "overline",
-        latex: "\\overline"
-      },
-      {
-        regex: "acute",
-        latex: "\\acute"
-      },
-      {
-        regex: "grave",
-        latex: "\\grave"
-      },
-      {
-        regex: "check",
-        latex: "\\check"
-      },
-      {
-        regex: "breve",
-        latex: "\\breve"
-      },
-      {
-        regex: "tilde",
-        latex: "\\tilde"
-      },
-      {
-        regex: "hat",
-        latex: "\\hat"
-      },
-      {
-        regex: "widehat",
-        latex: "\\widehat"
-      },
-      {
-        regex: "vec",
-        latex: "\\vec"
-      },
-      {
-        regex: "dot(?!eq)",
-        latex: "\\dot"
-      },
-      {
-        regex: "ddot(?!s)",
-        latex: "\\ddot"
-      },
-      {
-        regex: "dyad",
-        latex: "\\overleftrightarrow"
-      },
-      {
-        regex: "under",
-        latex: "\\underline"
-      }
-    ]
+      rule("sub(?!set)", "_"),
+      rule("sup(?!set)", "^"),
+      rule("box", "\\fbox"),
+      rule("arch", "\\stackrel\\frown"),
+      rule("bar", "\\overline"),
+      rule("overline", "\\overline"),
+      rule("acute", "\\acute"),
+      rule("grave", "\\grave"),
+      rule("check", "\\check"),
+      rule("breve", "\\breve"),
+      rule("tilde", "\\tilde"),
+      rule("hat", "\\hat"),
+      rule("widehat", "\\widehat"),
+      rule("vec", "\\vec"),
+      rule("dot(?!eq)", "\\dot"),
+      rule("ddot(?!s)", "\\ddot"),
+      rule("dyad", "\\overleftrightarrow"),
+      rule("under", "\\underline")
+    ].freeze
 
+    # ============================================================
+    # BLOCK COMMANDS - begin/end environments
+    # ============================================================
     BLOCK_COMMANDS = [
-      {
-        regex: "cases",
-        latex: "cases"
-      },
-      {
-        regex: "dmatrix",
-        latex: "vmatrix"
-      },
-      {
-        regex: "bmatrix",
-        latex: "Bmatrix"
-      },
-      {
-        regex: "pmatrix",
-        latex: "pmatrix"
-      },
-      {
-        regex: "matrix",
-        latex: "matrix"
-      }
-    ]
+      rule("cases", "cases"),
+      rule("dmatrix", "vmatrix"),
+      rule("bmatrix", "Bmatrix"),
+      rule("pmatrix", "pmatrix"),
+      rule("matrix", "matrix")
+    ].freeze
 
+    # ============================================================
+    # META - Special characters and delimiters
+    # ============================================================
     META = [
-      {
-        regex: "(?<![a-zA-Z])(?i:left|right)\\b\\s*+(?:(?=[^{}\\[\\]\\|\\(\\)<>])|(?:$))",
-        latex: "",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:left)\\s*<",
-        latex: " \\langle ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*>",
-        latex: " \\rangle ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:left)\\s*\\[",
-        latex: " \\left [ ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*\\]",
-        latex: " \\right ] ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:left)\\s*{",
-        latex: " \\{ ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*}",
-        latex: " \\} ",
-        alphabetic: false
-      },
-      {
-        regex: "\"{\"",
-        latex: " \\{ ",
-        alphabetic: false
-      },
-      {
-        regex: "\"}\"",
-        latex: " \\} ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*}",
-        latex: " \\} ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:left)\\s*\\(",
-        latex: " \\left ( ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*\\)",
-        latex: " \\right ) ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:left)\\s*\\|",
-        latex: " \\left | ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![a-zA-Z])(?i:right)\\s*\\|",
-        latex: " \\right | ",
-        alphabetic: false
-      },
-      {
-        regex: "`",
-        latex: " \\, ",
-        alphabetic: false
-      },
-      {
-        regex: "#",
-        latex: "\\\\\\\\",
-        alphabetic: false
-      },
-      {
-        regex: "&amp;",
-        latex: "",
-        alphabetic: false
-      },
-      {
-        regex: "\r?\n",
-        latex: "",
-        alphabetic: false
-      },
-      {
-        regex: "%",
-        latex: " \\% "
-      }
-    ]
+      # left/right without following bracket - remove
+      rule('(?<![a-zA-Z])(?i:left|right)\b\s*+(?:(?=[^{}\[\]\|\(\)<>])|(?:$))', "", alphabetic: false),
+      # Angle brackets
+      rule('(?<![a-zA-Z])(?i:left)\s*<', " \\langle ", alphabetic: false),
+      rule('(?<![a-zA-Z])(?i:right)\s*>', " \\rangle ", alphabetic: false),
+      # Square brackets
+      rule('(?<![a-zA-Z])(?i:left)\s*\[', " \\left [ ", alphabetic: false),
+      rule('(?<![a-zA-Z])(?i:right)\s*\]', " \\right ] ", alphabetic: false),
+      # Curly braces
+      rule('(?<![a-zA-Z])(?i:left)\s*{', " \\{ ", alphabetic: false),
+      rule('(?<![a-zA-Z])(?i:right)\s*}', " \\} ", alphabetic: false),
+      rule('"{"', " \\{ ", alphabetic: false),
+      rule('"}"', " \\} ", alphabetic: false),
+      # Parentheses
+      rule('(?<![a-zA-Z])(?i:left)\s*\(', " \\left ( ", alphabetic: false),
+      rule('(?<![a-zA-Z])(?i:right)\s*\)', " \\right ) ", alphabetic: false),
+      # Vertical bars
+      rule('(?<![a-zA-Z])(?i:left)\s*\|', " \\left | ", alphabetic: false),
+      rule('(?<![a-zA-Z])(?i:right)\s*\|', " \\right | ", alphabetic: false),
+      # Special characters
+      rule("`", " \\, ", alphabetic: false),          # thin space
+      rule("#", "\\\\\\\\", alphabetic: false),       # line break
+      rule("&amp;", "", alphabetic: false),           # alignment
+      rule("\r?\n", "", alphabetic: false),           # newlines
+      rule("%", " \\% ")                               # percent
+    ].freeze
 
-    SYMBOL = [
-      {
-        regex: ["Alpha", "ALPHA"],
-        latex: " \\mathit {A} "
-      },
-      {
-        regex: "alpha",
-        latex: " \\alpha "
-      },
-      {
-        regex: ["Beta", "BETA"],
-        latex: " \\mathit {B} "
-      },
-      {
-        regex: "beta",
-        latex: " \\beta "
-      },
-      {
-        regex: ["Gamma","GAMMA"],
-        latex: " \\Gamma "
-      },
-      {
-        regex: "gamma",
-        latex: " \\gamma "
-      },
-      {
-        regex: ["Delta","DELTA"],
-        latex: " \\Delta "
-      },
-      {
-        regex: "delta",
-        latex: " \\delta "
-      },
-      {
-        regex: ["Epsilon","EPSILON"],
-        latex: "\\mathit {E}"
-      },
-      {
-        regex: "epsilon",
-        latex: " \\epsilon "
-      },
-      {
-        regex: ["Zeta","ZETA"],
-        latex: "\\mathit {Z}"
-      },
-      {
-        regex: "zeta",
-        latex: " \\zeta "
-      },
-      {
-        regex: ["Eta","ETA"],
-        latex: "\\mathit {H}"
-      },
-      {
-        regex: "eta",
-        latex: " \\eta "
-      },
-      {
-        regex: ["Theta","THETA"],
-        latex: " \\Theta "
-      },
-      {
-        regex: "theta",
-        latex: " \\theta "
-      },
-      {
-        regex: ["Iota","IOTA"],
-        latex: "\\mathit {I}"
-      },
-      {
-        regex: "iota",
-        latex: " \\iota "
-      },
-      {
-        regex: ["Kappa","KAPPA"],
-        latex: "\\mathit {K}"
-      },
-      {
-        regex: "kappa",
-        latex: " \\kappa "
-      },
-      {
-        regex: ["Lambda","LAMBDA"],
-        latex: " \\Lambda "
-      },
-      {
-        regex: "lambda",
-        latex: " \\lambda "
-      },
-      {
-        regex: ["Mu","MU"],
-        latex: "\\mathit {M}"
-      },
-      {
-        regex: "mu",
-        latex: " \\mu "
-      },
-      {
-        regex: ["Nu","NU"],
-        latex: "\\mathit {N}"
-      },
-      {
-        regex: "nu",
-        latex: " \\nu "
-      },
-      {
-        regex: ["Xi","XI"],
-        latex: " \\Xi "
-      },
-      {
-        regex: "xi",
-        latex: " \\xi "
-      },
-      {
-        regex: ["Omicron", "OMICRON"],
-        latex: " \\mathit {O} "
-      },
-      {
-        regex: "omicron",
-        latex: " \\omicron "
-      },
-      {
-        regex: ["Pi","PI"],
-        latex: " \\Pi "
-      },
-      {
-        regex: "pi",
-        latex: " \\pi "
-      },
-      {
-        regex: ["Rho","RHO"],
-        latex: "\\mathit {P}"
-      },
-      {
-        regex: "rho",
-        latex: " \\rho "
-      },
-      {
-        regex: ["Sigma", "SIGMA"],
-        latex: " \\Sigma "
-      },
-      {
-        regex: "sigma",
-        latex: " \\sigma "
-      },
-      {
-        regex: ["Tau","TAU"],
-        latex: "\\mathit {T}"
-      },
-      {
-        regex: "tau",
-        latex: " \\tau "
-      },
-      {
-        regex: ["Upsilon","UPSILON"],
-        latex: "\\mathit {Y}"
-      },
-      {
-        regex: "upsilon",
-        latex: " \\upsilon "
-      },
-      {
-        regex: ["Phi","PHI"],
-        latex: " \\Phi "
-      },
-      {
-        regex: "phi",
-        latex: " \\phi "
-      },
-      {
-        regex: ["Chi","CHI"],
-        latex: "\\mathit {X}"
-      },
-      {
-        regex: "chi",
-        latex: " \\chi "
-      },
-      {
-        regex: ["Psi","PSI"],
-        latex: " \\Psi "
-      },
-      {
-        regex: "psi",
-        latex: " \\psi "
-      },
-      {
-        regex: ["Omega","OMEGA"],
-        latex: " \\Omega "
-      },
-      {
-        regex: "omega",
-        latex: " \\omega "
-      },
-      {
-        regex: ["aleph", "Aleph", "ALEPH"],
-        latex: " \\aleph "
-      },
-      {
-        regex: ["hbar", "Hbar", "HBAR"],
-        latex: " \\hbar "
-      },
-      {
-        regex: ["imath", "Imath", "IMATH"],
-        latex: " \\imath "
-      },
-      {
-        regex: ["jmath", "Jmath", "JMATH"],
-        latex: " \\jmath "
-      },
-      {
-        regex: ["ell", "Ell", "ELL"],
-        latex: " \\ell "
-      },
-      {
-        regex: ["liter", "Liter", "LITER"],
-        latex: " \\ell "
-      },
-      {
-        regex: ["wp", "Wp", "WP"],
-        latex: " \\wp "
-      },
-      {
-        regex: "IMAG",
-        latex: " \\Im "
-      },
-      {
-        regex: "ANGSTROM",
-        latex: " \\mathit {\\unicode{x212b}} "
-      },
-      {
-        regex: "vartheta",
-        latex: " \\vartheta "
-      },
-      {
-        regex: "varpi",
-        latex: " \\varpi "
-      },
-      {
-        regex: "varsigma",
-        latex: " \\varsigma "
-      },
-      {
-        regex: "varupsilon",
-        latex: " \\Upsilon "
-      },
-      {
-        regex: "varphi",
-        latex: " \\varphi "
-      },
-      {
-        regex: "varepsilon",
-        latex: " \\varepsilon "
-      },
-      {
-        regex: ["mho", "Mho", "MHO"],
-        latex: " \\mho "
-      },
-      {
-        regex: "varrho",
-        latex: " \\varrho "
-      },
+    # ============================================================
+    # GREEK LETTERS
+    # ============================================================
+    GREEK_LETTERS = [
+      # Lowercase Greek
+      rule("alpha", " \\alpha "),
+      rule("beta", " \\beta "),
+      rule("gamma", " \\gamma "),
+      rule("delta", " \\delta "),
+      rule("epsilon", " \\epsilon "),
+      rule("zeta", " \\zeta "),
+      rule("eta", " \\eta "),
+      rule("theta", " \\theta "),
+      rule("iota", " \\iota "),
+      rule("kappa", " \\kappa "),
+      rule("lambda", " \\lambda "),
+      rule("mu", " \\mu "),
+      rule("nu", " \\nu "),
+      rule("xi", " \\xi "),
+      rule("omicron", " \\omicron "),
+      rule("pi", " \\pi "),
+      rule("rho", " \\rho "),
+      rule("sigma", " \\sigma "),
+      rule("tau", " \\tau "),
+      rule("upsilon", " \\upsilon "),
+      rule("phi", " \\phi "),
+      rule("chi", " \\chi "),
+      rule("psi", " \\psi "),
+      rule("omega", " \\omega "),
+      # Uppercase Greek (with LaTeX commands)
+      rule(["Gamma", "GAMMA"], " \\Gamma "),
+      rule(["Delta", "DELTA"], " \\Delta "),
+      rule(["Theta", "THETA"], " \\Theta "),
+      rule(["Lambda", "LAMBDA"], " \\Lambda "),
+      rule(["Xi", "XI"], " \\Xi "),
+      rule(["Pi", "PI"], " \\Pi "),
+      rule(["Sigma", "SIGMA"], " \\Sigma "),
+      rule(["Phi", "PHI"], " \\Phi "),
+      rule(["Psi", "PSI"], " \\Psi "),
+      rule(["Omega", "OMEGA"], " \\Omega "),
+      # Uppercase Greek (italic, no LaTeX command)
+      rule(["Alpha", "ALPHA"], " \\mathit {A} "),
+      rule(["Beta", "BETA"], " \\mathit {B} "),
+      rule(["Epsilon", "EPSILON"], "\\mathit {E}"),
+      rule(["Zeta", "ZETA"], "\\mathit {Z}"),
+      rule(["Eta", "ETA"], "\\mathit {H}"),
+      rule(["Iota", "IOTA"], "\\mathit {I}"),
+      rule(["Kappa", "KAPPA"], "\\mathit {K}"),
+      rule(["Mu", "MU"], "\\mathit {M}"),
+      rule(["Nu", "NU"], "\\mathit {N}"),
+      rule(["Omicron", "OMICRON"], " \\mathit {O} "),
+      rule(["Rho", "RHO"], "\\mathit {P}"),
+      rule(["Tau", "TAU"], "\\mathit {T}"),
+      rule(["Upsilon", "UPSILON"], "\\mathit {Y}"),
+      rule(["Chi", "CHI"], "\\mathit {X}"),
+      # Variant forms
+      rule("vartheta", " \\vartheta "),
+      rule("varpi", " \\varpi "),
+      rule("varsigma", " \\varsigma "),
+      rule("varupsilon", " \\Upsilon "),
+      rule("varphi", " \\varphi "),
+      rule("varepsilon", " \\varepsilon "),
+      rule("varrho", " \\varrho ")
+    ].freeze
 
+    # ============================================================
+    # SPECIAL SYMBOLS
+    # ============================================================
+    SPECIAL_SYMBOLS = [
+      ci_rule("aleph", " \\aleph "),
+      ci_rule("hbar", " \\hbar "),
+      ci_rule("imath", " \\imath "),
+      ci_rule("jmath", " \\jmath "),
+      ci_rule("ell", " \\ell "),
+      ci_rule("liter", " \\ell "),
+      ci_rule("wp", " \\wp "),
+      ci_rule("mho", " \\mho "),
+      rule("IMAG", " \\Im "),
+      rule("ANGSTROM", " \\mathit {\\unicode{x212b}} "),
+      rule("prime", " ' ")
+    ].freeze
 
-      {
-        regex: ["prod", "PROD"],
-        latex: " \\prod "
-      },
-      {
-        regex: ["coprod", "Coprod", "COPROD"],
-        latex: " \\coprod "
-      },
-      {
-        regex: ["inter", "Inter", "INTER"],
-        latex: " \\bigcap "
-      },
-      {
-        regex: ["bigcap", "Bigcap", "BIGCAP"],
-        latex: " \\bigcap "
-      },
-      {
-        regex: ["union", "Union", "UNION"],
-        latex: " \\bigcup "
-      },
-      {
-        regex: ["bigcup", "Bigcup", "BIGCUP"],
-        latex: " \\bigcup "
-      },
-      {
-        regex: ["cap", "Cap", "CAP"],
-        latex: " \\cap "
-      },
-      {
-        regex: ["smallinter", "Smallinter", "SMALLINTER"],
-        latex: " \\cap "
-      },
-      {
-        regex: ["cup", "Cup", "CUP"],
-        latex: " \\cup "
-      },
-      {
-        regex: ["smallunion", "Smallunion", "SMALLUNION"],
-        latex: " \\cup "
-      },
-      {
-        regex: ["sqcap", "Sqcap", "SQCAP"],
-        latex: " \\sqcap "
-      },
-      {
-        regex: ["sqcup", "Sqcup", "SQCUP"],
-        latex: " \\sqcup "
-      },
-      {
-        regex: ["bigsqcup", "Bigsqcup", "BIGSQCUP"],
-        latex: " \\bigsqcup "
-      },
-      {
-        regex: ["uplus", "Uplus", "UPLUS"],
-        latex: " \\uplus "
-      },
-      {
-        regex: ["biguplus", "Biguplus", "BIGUPLUS"],
-        latex: " \\biguplus "
-      },
-      {
-        regex: ["subset", "Subset", "SUBSET"],
-        latex: " \\subset "
-      },
-      {
-        regex: ["supset", "Supset", "SUPSET"],
-        latex: " \\supset "
-      },
-      {
-        regex: ["subseteq", "Subseteq", "SUBSETEQ"],
-        latex: " \\subseteq "
-      },
-      {
-        regex: ["supseteq", "Supseteq", "SUPSETEQ"],
-        latex: " \\supseteq "
-      },
-      {
-        regex: ["nsubseteq", "Nsubseteq", "NSUBSETEQ"],
-        latex: " \\nsubseteq "
-      },
-      {
-        regex: ["nsupseteq", "Nsupseteq", "NSUPSETEQ"],
-        latex: " \\nsupseteq "
-      },
-      {
-        regex: ["sqsubset", "Sqsubset", "SQSUBSET"],
-        latex: " \\sqsubset "
-      },
-      {
-        regex: ["sqsupset", "Sqsupset", "SQSUPSET"],
-        latex: " \\sqsupset "
-      },
-      {
-        regex: ["sqsubseteq", "Sqsubseteq", "SQSUBSETEQ"],
-        latex: " \\sqsubseteq "
-      },
-      {
-        regex: ["sqsupseteq", "Sqsupseteq", "SQSUPSETEQ"],
-        latex: " \\sqsupseteq "
-      },
-      {
-        regex: ["in(?!t|f)", "In(?!t|f)", "IN(?!T|F)"],
-        latex: " \\in "
-      },
-      {
-        regex: ["not(?!in)", "Not(?!in)", "NOT(?!IN)"],
-        latex: " \\not "
-      },
-      {
-        regex: ["ni", "Ni", "NI"],
-        latex: " \\ni "
-      },
-      {
-        regex: ["owns", "Owns", "OWNS"],
-        latex: " \\owns "
-      },
-      {
-        regex: ["notin", "Notin", "NOTIN"],
-        latex: " \\not \\in "
-      },
-      {
-        regex: ["nin", "Nin", "NIN"],
-        latex: " \\not \\in "
-      },
-      {
-        regex: ["notni", "Notni", "NOTNI"],
-        latex: " \\not \\ni "
-      },
-      {
-        regex: ["leq", "Leq", "LEQ"],
-        latex: " \\leq "
-      },
-      {
-        regex: ["le", "Le", "LE"],
-        latex: " \\le "
-      },
-      {
-        regex: "<=",
-        latex: " \\leqq ",
-        alphabetic: false
-      },
-      {
-        regex: ["geq", "Geq", "GEQ"],
-        latex: " \\geq "
-      },
-      {
-        regex: ["ge", "Ge", "GE"],
-        latex: " \\ge "
-      },
-      {
-        regex: ">=",
-        latex: " \\geqq ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![>\\-])(?:(?<!\\s)>|>(?!\\s))(?![=>])",
-        latex: " > ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<![s<])(?:(?<!\\s)<|<(?!\\s))(?![<=])",
-        latex: " < ",
-        alphabetic: false
-      },
+    # ============================================================
+    # SET OPERATIONS
+    # ============================================================
+    SET_OPERATIONS = [
+      rule(["prod", "PROD"], " \\prod "),
+      ci_rule("coprod", " \\coprod "),
+      ci_rule("inter", " \\bigcap "),
+      ci_rule("bigcap", " \\bigcap "),
+      ci_rule("union", " \\bigcup "),
+      ci_rule("bigcup", " \\bigcup "),
+      ci_rule("cap", " \\cap "),
+      ci_rule("smallinter", " \\cap "),
+      ci_rule("cup", " \\cup "),
+      ci_rule("smallunion", " \\cup "),
+      ci_rule("sqcap", " \\sqcap "),
+      ci_rule("sqcup", " \\sqcup "),
+      ci_rule("bigsqcup", " \\bigsqcup "),
+      ci_rule("uplus", " \\uplus "),
+      ci_rule("biguplus", " \\biguplus "),
+      ci_rule("subset", " \\subset "),
+      ci_rule("supset", " \\supset "),
+      ci_rule("subseteq", " \\subseteq "),
+      ci_rule("supseteq", " \\supseteq "),
+      ci_rule("nsubseteq", " \\nsubseteq "),
+      ci_rule("nsupseteq", " \\nsupseteq "),
+      ci_rule("sqsubset", " \\sqsubset "),
+      ci_rule("sqsupset", " \\sqsupset "),
+      ci_rule("sqsubseteq", " \\sqsubseteq "),
+      ci_rule("sqsupseteq", " \\sqsupseteq "),
+      rule(["in(?!t|f)", "In(?!t|f)", "IN(?!T|F)"], " \\in "),
+      rule(["not(?!in)", "Not(?!in)", "NOT(?!IN)"], " \\not "),
+      ci_rule("ni", " \\ni "),
+      ci_rule("owns", " \\owns "),
+      ci_rule("notin", " \\not \\in "),
+      ci_rule("nin", " \\not \\in "),
+      ci_rule("notni", " \\not \\ni ")
+    ].freeze
 
-      {
-        regex: ["oplus", "Oplus", "OPLUS"],
-        latex: " \\oplus "
-      },
-      {
-        regex: ["ominus", "Ominus", "OMINUS"],
-        latex: " \\ominus "
-      },
-      {
-        regex: ["otimes", "Otimes", "OTIMES"],
-        latex: " \\otimes "
-      },
-      {
-        regex: ["odot", "Odot", "ODOT"],
-        latex: " \\odot "
-      },
-      {
-        regex: ["oslash", "Oslash", "OSLASH"],
-        latex: " \\oslash "
-      },
-      {
-        regex: ["lor", "Lor", "LOR"],
-        latex: " \\lor "
-      },
-      {
-        regex: ["vee", "Vee", "VEE"],
-        latex: " \\vee "
-      },
-      {
-        regex: ["bigvee", "Bigvee", "BIGVEE"],
-        latex: " \\bigvee "
-      },
-      {
-        regex: ["land", "Land", "LAND"],
-        latex: " \\land "
-      },
-      {
-        regex: ["wedge", "Wedge", "WEDGE"],
-        latex: " \\wedge "
-      },
-      {
-        regex: ["bigwedge", "Bigwedge", "BIGWEDGE"],
-        latex: " \\bigwedge "
-      },
-      {
-        regex: "(?<!<)<<(?!<)",
-        latex: " \\ll ",
-        alphabetic: false
-      },
-      {
-        regex: "(?<!>)>>(?!>)",
-        latex: " \\gg ",
-        alphabetic: false
-      },
-      {
-        regex: "<<<",
-        latex: " \\lll ",
-        alphabetic: false
-      },
-      {
-        regex: ["lll", "Lll", "LLL"],
-        latex: " \\lll "
-      },
-      {
-        regex: ">>>",
-        latex: " \\ggg ",
-        alphabetic: false
-      },
-      {
-        regex: "ggg",
-        latex: " \\ggg "
-      },
-      {
-        regex: ["prec", "PREC"],
-        latex: " \\prec "
-      },
-      {
-        regex: ["succ", "Succ", "SUCC"],
-        latex: " \\succ "
-      },
+    # ============================================================
+    # COMPARISON OPERATORS
+    # ============================================================
+    COMPARISON_OPERATORS = [
+      ci_rule("leq", " \\leq "),
+      ci_rule("le", " \\le "),
+      rule("<=", " \\leqq ", alphabetic: false),
+      ci_rule("geq", " \\geq "),
+      ci_rule("ge", " \\ge "),
+      rule(">=", " \\geqq ", alphabetic: false),
+      rule('(?<![>\-])(?:(?<!\s)>|>(?!\s))(?![=>])', " > ", alphabetic: false),
+      rule('(?<![s<])(?:(?<!\s)<|<(?!\s))(?![<=])', " < ", alphabetic: false),
+      rule("(?<!<)<<(?!<)", " \\ll ", alphabetic: false),
+      rule("(?<!>)>>(?!>)", " \\gg ", alphabetic: false),
+      rule("<<<", " \\lll ", alphabetic: false),
+      ci_rule("lll", " \\lll "),
+      rule(">>>", " \\ggg ", alphabetic: false),
+      rule("ggg", " \\ggg "),
+      rule(["prec", "PREC"], " \\prec "),
+      ci_rule("succ", " \\succ ")
+    ].freeze
 
+    # ============================================================
+    # BINARY OPERATORS
+    # ============================================================
+    BINARY_OPERATORS = [
+      rule('\+\-', " \\pm ", alphabetic: false),
+      ci_rule("plusminus", " \\pm "),
+      rule('\-\+', " \\mp ", alphabetic: false),
+      ci_rule("minusplus", " \\mp "),
+      ci_rule("dsum", " \\dotplus "),
+      ci_rule("times", " \\times "),
+      ci_rule("divide", " \\div "),
+      ci_rule("div", " \\div "),
+      ci_rule("circ", " \\circ "),
+      ci_rule("bullet", " \\bullet "),
+      rule(["Deg", "DEG"], " \\,^{\\circ} "),
+      ci_rule("ast", " \\ast "),
+      ci_rule("star", " \\star "),
+      ci_rule("bigcirc", " \\bigcirc "),
+      ci_rule("oplus", " \\oplus "),
+      ci_rule("ominus", " \\ominus "),
+      ci_rule("otimes", " \\otimes "),
+      ci_rule("odot", " \\odot "),
+      ci_rule("oslash", " \\oslash ")
+    ].freeze
 
-      {
-        regex: "\\+\\-",
-        latex: " \\pm "
-      },
-      {
-        regex: ["plusminus", "Plusminus", "PLUSMINUS"],
-        latex: " \\pm "
-      },
-      {
-        regex: "\\-\\+",
-        latex: " \\mp "
-      },
-      {
-        regex: ["minusplus", "Minusplus", "MINUSPLUS"],
-        latex: " \\mp "
-      },
-      {
-        regex: ["dsum", "Dsum", "DSUM"],
-        latex: " \\dotplus "
-      },
-      {
-        regex: ["times", "Times", "TIMES"],
-        latex: " \\times "
-      },
-      {
-        regex: ["divide", "Divide", "DIVIDE"],
-        latex: " \\div "
-      },
-      {
-        regex: ["div", "Div", "DIV"],
-        latex: " \\div "
-      },
-      {
-        regex: ["circ", "Circ", "CIRC"],
-        latex: " \\circ "
-      },
-      {
-        regex: ["bullet", "Bullet", "BULLET"],
-        latex: " \\bullet "
-      },
-      {
-        regex: ["Deg", "DEG"],
-        latex: " \\,^{\\circ} "
-      },
-      {
-        regex: ["ast", "Ast", "AST"],
-        latex: " \\ast "
-      },
-      {
-        regex: ["star", "Star", "STAR"],
-        latex: " \\star "
-      },
-      {
-        regex: ["bigcirc", "Bigcirc", "BIGCIRC"],
-        latex: " \\bigcirc "
-      },
-      {
-        regex: ["emptyset", "Emptyset", "EMPTYSET"],
-        latex: " \\emptyset "
-      },
-      {
-        regex: ["therefore", "Therefore", "THEREFORE"],
-        latex: " \\therefore "
-      },
-      {
-        regex: ["because", "Because", "BECAUSE"],
-        latex: " \\because "
-      },
-      {
-        regex: ["exists?", "Exists?", "EXISTS?"],
-        latex: " \\exists "
-      },
-      {
-        regex: ["ne", "Ne", "NE"],
-        latex: " \\ne "
-      },
-      {
-        regex: "!=",
-        latex: " \\ne ",
-        alphabetic: false
-      },
-      {
-        regex: ["neq", "Neq", "NEQ"],
-        latex: " \\neq "
-      },
-      {
-        regex: ["doteq", "Doteq", "DOTEQ"],
-        latex: " \\doteq "
-      },
-      {
-        regex: ["image", "Image"],
-        latex: " \\fallingdotseq "
-      },
-      {
-        regex: ["reimage", "Reimage", "REIMAGE"],
-        latex: " \\risingdotseq "
-      },
-      {
-        regex: ["sim", "Sim", "SIM"],
-        latex: " \\backsim "
-      },
-      {
-        regex: "∾",
-        latex: " \\backsim ",
-        alphabetic: false
-      },
-      {
-        regex: "\\xf3\\xb0\\x81\\x80",
-        latex: " \\backsim ",
-        alphabetic: false
-      },
-      {
-        regex: ["simeq", "Simeq", "SIMEQ"],
-        latex: " \\simeq "
-      },
-      {
-        regex: ["approx", "Approx", "APPROX"],
-        latex: " \\approx "
-      },
-      {
-        regex: ["cong", "Cong", "CONG"],
-        latex: " \\cong "
-      },
-      {
-        regex: ["equiv", "Equiv", "EQUIV"],
-        latex: " \\equiv "
-      },
-      {
-        regex: "==",
-        latex: " \\equiv ",
-        alphabetic: false
-      },
-      {
-        regex: ["asymp", "Asymp", "ASYMP"],
-        latex: " \\asymp "
-      },
-      {
-        regex: ["iso", "Iso", "ISO"],
-        latex: " \\Bumpeq "
-      },
-      {
-        regex: ["diamond", "Diamond", "DIAMOND"],
-        latex: " \\diamond "
-      },
-      {
-        regex: ["Forall", "FORALL"],
-        latex: " \\forall "
-      },
-      {
-        regex: "prime",
-        latex: " ' "
-      },
-      {
-        regex: ["partial", "Partial", "PARTIAL"],
-        latex: " \\partial "
-      },
-      {
-        regex: ["infty", "Infty", "INFTY"],
-        latex: " \\infty "
-      },
-      {
-        regex: ["inf", "Inf", "INF"],
-        latex: " \\infty "
-      },
-      {
-        regex: ["infinity", "Infinity", "INFINITY"],
-        latex: " \\infty "
-      },
-      {
-        regex: ["LNOT"],
-        latex: " \\lnot "
-      },
-      {
-        regex: ["neg", "Neg", "NEG"],
-        latex: " \\neg "
-      },
-      {
-        regex: ["propto", "PROPTO"],
-        latex: " \\propto "
-      },
-      {
-        regex: ["xor", "Xor", "XOR"],
-        latex: " \\veebar "
-      },
-      {
-        regex: ["dagger", "Dagger", "DAGGER"],
-        latex: " \\dagger "
-      },
-      {
-        regex: ["ddagger", "Ddagger", "DDAGGER"],
-        latex: " \\ddagger "
-      },
-      {
-        regex: ["parallel", "Parallel", "PARALLEL"],
-        latex: " \\parallel "
-      },
+    # ============================================================
+    # LOGICAL OPERATORS
+    # ============================================================
+    LOGICAL_OPERATORS = [
+      ci_rule("lor", " \\lor "),
+      ci_rule("vee", " \\vee "),
+      ci_rule("bigvee", " \\bigvee "),
+      ci_rule("land", " \\land "),
+      ci_rule("wedge", " \\wedge "),
+      ci_rule("bigwedge", " \\bigwedge "),
+      ci_rule("xor", " \\veebar "),
+      rule(["LNOT"], " \\lnot "),
+      ci_rule("neg", " \\neg ")
+    ].freeze
 
+    # ============================================================
+    # RELATION SYMBOLS
+    # ============================================================
+    RELATION_SYMBOLS = [
+      ci_rule("ne", " \\ne "),
+      rule("!=", " \\ne ", alphabetic: false),
+      ci_rule("neq", " \\neq "),
+      ci_rule("doteq", " \\doteq "),
+      rule(["image", "Image"], " \\fallingdotseq "),
+      ci_rule("reimage", " \\risingdotseq "),
+      ci_rule("sim", " \\backsim "),
+      rule("∾", " \\backsim ", alphabetic: false),
+      rule('\xf3\xb0\x81\x80', " \\backsim ", alphabetic: false),
+      ci_rule("simeq", " \\simeq "),
+      ci_rule("approx", " \\approx "),
+      ci_rule("cong", " \\cong "),
+      ci_rule("equiv", " \\equiv "),
+      rule("==", " \\equiv ", alphabetic: false),
+      ci_rule("asymp", " \\asymp "),
+      ci_rule("iso", " \\Bumpeq "),
+      ci_rule("propto", " \\propto ")
+    ].freeze
 
-      {
-        regex: ["larrow", "leftarrow"],
-        latex: " \\leftarrow "
-      },
-      {
-        regex: ["Leftarrow", "LEFTARROW", "LARROW", "Larrow"],
-        latex: " \\Leftarrow "
-      },
-      {
-        regex: ["rarrow", "rightarrow"],
-        latex: " \\rightarrow "
-      },
-      {
-        regex: ["Rightarrow", "RIGHTARROW", "RARROW", "Rarrow"],
-        latex: " \\Rightarrow "
-      },
-      {
-        regex: "uparrow",
-        latex: " \\uparrow "
-      },
-      {
-        regex: ["Uparrow", "UPARROW"],
-        latex: " \\Uparrow "
-      },
-      {
-        regex: "downarrow",
-        latex: " \\downarrow "
-      },
-      {
-        regex: ["Downarrow", "DOWNARROW"],
-        latex: " \\Downarrow "
-      },
-      {
-        regex: "udarrow",
-        latex: " \\updownarrow "
-      },
-      {
-        regex: ["Udarrow", "UDARROW"],
-        latex: " \\Updownarrow "
-      },
-      {
-        regex: "lrarrow",
-        latex: " \\leftrightarrow "
-      },
-      {
-        regex: ["Lrarrow", "LRARROW"],
-        latex: " \\Leftrightarrow "
-      },
-      {
-        regex: ["nwarrow", "Nwarrow", "NWARROW"],
-        latex: " \\nwarrow "
-      },
-      {
-        regex: ["searrow", "Searrow", "SEARROW"],
-        latex: " \\searrow "
-      },
-      {
-        regex: ["nearrow", "Nearrow", "NEARROW"],
-        latex: " \\nearrow "
-      },
-      {
-        regex: ["swarrow", "Swarrow", "SWARROW"],
-        latex: " \\swarrow "
-      },
-      {
-        regex: ["hookleft", "Hookleft", "HOOKLEFT"],
-        latex: " \\hookleftarrow "
-      },
-      {
-        regex: ["hookright", "Hookright", "HOOKRIGHT"],
-        latex: " \\hookrightarrow "
-      },
-      {
-        regex: ["mapsto", "Mapsto", "MAPSTO"],
-        latex: " \\mapsto "
-      },
-      {
-        regex: ["Vert", "VERT"],
-        latex: " \\Vert "
-      },
-      {
-        regex: "vert",
-        latex: " \\vert "
-      },
+    # ============================================================
+    # MISCELLANEOUS SYMBOLS
+    # ============================================================
+    MISC_SYMBOLS = [
+      ci_rule("emptyset", " \\emptyset "),
+      ci_rule("therefore", " \\therefore "),
+      ci_rule("because", " \\because "),
+      rule(["exists?", "Exists?", "EXISTS?"], " \\exists "),
+      ci_rule("diamond", " \\diamond "),
+      rule(["Forall", "FORALL"], " \\forall "),
+      ci_rule("partial", " \\partial "),
+      ci_rule("infty", " \\infty "),
+      ci_rule("inf", " \\infty "),
+      ci_rule("infinity", " \\infty "),
+      ci_rule("dagger", " \\dagger "),
+      ci_rule("ddagger", " \\ddagger "),
+      ci_rule("parallel", " \\parallel ")
+    ].freeze
 
+    # ============================================================
+    # ARROWS
+    # ============================================================
+    ARROWS = [
+      rule(["larrow", "leftarrow"], " \\leftarrow "),
+      rule(["Leftarrow", "LEFTARROW", "LARROW", "Larrow"], " \\Leftarrow "),
+      rule(["rarrow", "rightarrow"], " \\rightarrow "),
+      rule(["Rightarrow", "RIGHTARROW", "RARROW", "Rarrow"], " \\Rightarrow "),
+      rule("uparrow", " \\uparrow "),
+      rule(["Uparrow", "UPARROW"], " \\Uparrow "),
+      rule("downarrow", " \\downarrow "),
+      rule(["Downarrow", "DOWNARROW"], " \\Downarrow "),
+      rule("udarrow", " \\updownarrow "),
+      rule(["Udarrow", "UDARROW"], " \\Updownarrow "),
+      rule("lrarrow", " \\leftrightarrow "),
+      rule(["Lrarrow", "LRARROW"], " \\Leftrightarrow "),
+      ci_rule("nwarrow", " \\nwarrow "),
+      ci_rule("searrow", " \\searrow "),
+      ci_rule("nearrow", " \\nearrow "),
+      ci_rule("swarrow", " \\swarrow "),
+      ci_rule("hookleft", " \\hookleftarrow "),
+      ci_rule("hookright", " \\hookrightarrow "),
+      ci_rule("mapsto", " \\mapsto "),
+      rule("->", " \\to ", alphabetic: false)
+    ].freeze
 
-      {
-        regex: ["backslash", "Backslash", "BACKSLASH"],
-        latex: " \\backslash "
-      },
-      {
-        regex: ["cdot(?!s)", "Cdot(?!s)", "CDOT(?!S)"],
-        latex: " \\cdot "
-      },
-      {
-        regex: ["cdots", "Cdots", "CDOTS"],
-        latex: " \\cdots "
-      },
-      {
-        regex: ["ldots", "Ldots", "LDOTS"],
-        latex: " \\ldots "
-      },
-      {
-        regex: ["vdots", "Vdots", "VDOTS"],
-        latex: " \\vdots "
-      },
-      {
-        regex: ["ddots", "Ddots", "DDOTS"],
-        latex: " \\ddots "
-      },
-      {
-        regex: ["triangle(?![dlr])", "Triangle(?![dlr])", "TRIANGLE(?![DLR])"],
-        latex: " \\triangle "
-      },
-      {
-        regex: ["triangled", "Triangled", "TRIANGLED"],
-        latex: " \\triangledown "
-      },
-      {
-        regex: ["trianglel", "Trianglel", "TRIANGLEL"],
-        latex: " \\triangleleft "
-      },
-      {
-        regex: ["triangler", "Triangler", "TRIANGLER"],
-        latex: " \\triangleright "
-      },
-      {
-        regex: ["nabla", "Nabla", "NABLA"],
-        latex: " \\nabla "
-      },
-      {
-        regex: ["angle", "Angle", "ANGLE"],
-        latex: " \\angle "
-      },
-      {
-        regex: ["langle", "Langle", "LANGLE"],
-        latex: " \\langle "
-      },
-      {
-        regex: ["rangle", "Rangle", "RANGLE"],
-        latex: " \\rangle "
-      },
-      {
-        regex: ["msangle", "Msangle", "MSANGLE"],
-        latex: " \\measuredangle "
-      },
-      {
-        regex: ["sangle", "Sangle", "SANGLE"],
-        latex: " \\sphericalangle "
-      },
-      {
-        regex: ["vdash", "Vdash", "VDASH"],
-        latex: " \\vdash "
-      },
-      {
-        regex: ["hright", "Hright", "HRIGHT"],
-        latex: " \\vdash "
-      },
-      {
-        regex: ["dashv", "Dashv", "DASHV"],
-        latex: " \\dashv "
-      },
-      {
-        regex: ["hleft", "Hleft", "HLEFT"],
-        latex: " \\dashv "
-      },
-      {
-        regex: ["bot", "Bot", "BOT"],
-        latex: " \\bot "
-      },
-      {
-        regex: ["top", "Top", "TOP"],
-        latex: " \\top "
-      },
-      {
-        regex: ["Models", "MODELS"],
-        latex: " \\models "
-      },
-      {
-        regex: ["laplace", "Laplace", "LAPLACE"],
-        latex: " \\mathscr {L} "
-      },
-      {
-        regex: ["centigrade", "Centigrade", "CENTIGRADE"],
-        latex: " \\,^{\\circ}\\mathrm {C} "
-      },
-      {
-        regex: ["fahrenheit", "Fahrenheit", "FAHRENHEIT"],
-        latex: " \\,^{\\circ}\\mathrm {F} "
-      },
-      {
-        regex: ["amalg", "Amalg", "AMALG"],
-        latex: " \\amalg "
-      },
-      {
-        regex: ["lfloor", "Lfloor", "LFLOOR"],
-        latex: " \\lfloor "
-      },
-      {
-        regex: ["rfloor", "Rfloor", "RFLOOR"],
-        latex: " \\rfloor "
-      },
-      {
-        regex: ["lceil", "Lceil", "LCEIL"],
-        latex: " \\lceil "
-      },
-      {
-        regex: ["rceil", "Rceil", "RCEIL"],
-        latex: " \\rceil "
-      },
-      {
-        regex: "->",
-        latex: " \\to ",
-        alphabetic: false
-      }
-    ]
+    # ============================================================
+    # DELIMITERS AND DOTS
+    # ============================================================
+    DELIMITERS = [
+      rule(["Vert", "VERT"], " \\Vert "),
+      rule("vert", " \\vert "),
+      ci_rule("backslash", " \\backslash "),
+      rule(["cdot(?!s)", "Cdot(?!s)", "CDOT(?!S)"], " \\cdot "),
+      ci_rule("cdots", " \\cdots "),
+      ci_rule("ldots", " \\ldots "),
+      ci_rule("vdots", " \\vdots "),
+      ci_rule("ddots", " \\ddots ")
+    ].freeze
 
+    # ============================================================
+    # GEOMETRY SYMBOLS
+    # ============================================================
+    GEOMETRY_SYMBOLS = [
+      rule(["triangle(?![dlr])", "Triangle(?![dlr])", "TRIANGLE(?![DLR])"], " \\triangle "),
+      ci_rule("triangled", " \\triangledown "),
+      ci_rule("trianglel", " \\triangleleft "),
+      ci_rule("triangler", " \\triangleright "),
+      ci_rule("nabla", " \\nabla "),
+      ci_rule("angle", " \\angle "),
+      ci_rule("langle", " \\langle "),
+      ci_rule("rangle", " \\rangle "),
+      ci_rule("msangle", " \\measuredangle "),
+      ci_rule("sangle", " \\sphericalangle "),
+      ci_rule("vdash", " \\vdash "),
+      ci_rule("hright", " \\vdash "),
+      ci_rule("dashv", " \\dashv "),
+      ci_rule("hleft", " \\dashv "),
+      ci_rule("bot", " \\bot "),
+      ci_rule("top", " \\top "),
+      rule(["Models", "MODELS"], " \\models "),
+      ci_rule("laplace", " \\mathscr {L} "),
+      ci_rule("centigrade", " \\,^{\\circ}\\mathrm {C} "),
+      ci_rule("fahrenheit", " \\,^{\\circ}\\mathrm {F} "),
+      ci_rule("amalg", " \\amalg "),
+      ci_rule("lfloor", " \\lfloor "),
+      ci_rule("rfloor", " \\rfloor "),
+      ci_rule("lceil", " \\lceil "),
+      ci_rule("rceil", " \\rceil ")
+    ].freeze
+
+    # ============================================================
+    # RESERVED WORDS - Function names (rendered in Roman font)
+    # ============================================================
     RESERVED_WORD = [
-      {
-        regex: "(?<!mathrm\\s{)sin(?!h)",
-        latex: " \\mathrm {sin} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)cos(?!ec|h)",
-        latex: " \\mathrm {cos} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)coth",
-        latex: " \\mathrm {coth} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)log",
-        latex: " \\mathrm {log} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)tan(?!h)",
-        latex: " \\mathrm {tan} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)cot(?!h)",
-        latex: " \\mathrm {cot} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)ln(?!ot)",
-        latex: " \\mathrm {ln} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)lg",
-        latex: " \\mathrm {lg} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)sec",
-        latex: " \\mathrm {sec} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)cosec",
-        latex: " \\mathrm {cosec} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)max",
-        latex: " \\mathrm {max} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)min",
-        latex: " \\mathrm {min} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)csc",
-        latex: " \\mathrm {csc} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)arcsin",
-        latex: " \\mathrm {arcsin} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)lim",
-        latex: " \\mathrm {lim} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)Lim",
-        latex: " \\mathrm {Lim} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)arccos",
-        latex: " \\mathrm {arccos} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)arctan",
-        latex: " \\mathrm {arctan} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)exp",
-        latex: " \\mathrm {exp} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)Exp",
-        latex: " \\mathrm {Exp} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)arc(?!h|sin|cos|tan)",
-        latex: " \\mathrm {arc} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)sinh",
-        latex: " \\mathrm {sinh} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)det",
-        latex: " \\mathrm {det} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)gcd",
-        latex: " \\mathrm {gcd} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)cosh",
-        latex: " \\mathrm {cosh} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)tanh",
-        latex: " \\mathrm {tanh} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)mod",
-        latex: " \\mathrm {mod} "
-      },
+      # Trigonometric functions
+      rule('(?<!mathrm\s{)sin(?!h)', " \\mathrm {sin} "),
+      rule('(?<!mathrm\s{)cos(?!ec|h)', " \\mathrm {cos} "),
+      rule('(?<!mathrm\s{)tan(?!h)', " \\mathrm {tan} "),
+      rule('(?<!mathrm\s{)cot(?!h)', " \\mathrm {cot} "),
+      rule('(?<!mathrm\s{)sec', " \\mathrm {sec} "),
+      rule('(?<!mathrm\s{)cosec', " \\mathrm {cosec} "),
+      rule('(?<!mathrm\s{)csc', " \\mathrm {csc} "),
+      # Inverse trig
+      rule('(?<!mathrm\s{)arcsin', " \\mathrm {arcsin} "),
+      rule('(?<!mathrm\s{)arccos', " \\mathrm {arccos} "),
+      rule('(?<!mathrm\s{)arctan', " \\mathrm {arctan} "),
+      rule('(?<!mathrm\s{)arc(?!h|sin|cos|tan)', " \\mathrm {arc} "),
+      # Hyperbolic functions
+      rule('(?<!mathrm\s{)sinh', " \\mathrm {sinh} "),
+      rule('(?<!mathrm\s{)cosh', " \\mathrm {cosh} "),
+      rule('(?<!mathrm\s{)tanh', " \\mathrm {tanh} "),
+      rule('(?<!mathrm\s{)coth', " \\mathrm {coth} "),
+      # Logarithms
+      rule('(?<!mathrm\s{)log', " \\mathrm {log} "),
+      rule('(?<!mathrm\s{)ln(?!ot)', " \\mathrm {ln} "),
+      rule('(?<!mathrm\s{)lg', " \\mathrm {lg} "),
+      rule('(?<!mathrm\s{)exp', " \\mathrm {exp} "),
+      rule('(?<!mathrm\s{)Exp', " \\mathrm {Exp} "),
+      # Limits and special functions
+      rule('(?<!mathrm\s{)lim', " \\mathrm {lim} "),
+      rule('(?<!mathrm\s{)Lim', " \\mathrm {Lim} "),
+      rule('(?<!mathrm\s{)max', " \\mathrm {max} "),
+      rule('(?<!mathrm\s{)min', " \\mathrm {min} "),
+      rule('(?<!mathrm\s{)det', " \\mathrm {det} "),
+      rule('(?<!mathrm\s{)gcd', " \\mathrm {gcd} "),
+      rule('(?<!mathrm\s{)mod', " \\mathrm {mod} "),
+      # Keywords
+      rule('(?<!mathrm\s{)if', " \\mathrm {if} "),
+      rule('(?<!mathrm\s{)for', " \\mathrm {for} "),
+      rule('(?<!mathrm\s{)and', " \\mathrm {and} "),
+      # Algebra
+      rule('(?<!mathrm\s{)hom', " \\mathrm {hom} "),
+      rule('(?<!mathrm\s{)ker', " \\mathrm {ker} "),
+      rule('(?<!mathrm\s{)deg', " \\mathrm {deg} "),
+      rule('(?<!mathrm\s{)arg', " \\mathrm {arg} "),
+      rule('(?<!mathrm\s{)dim', " \\mathrm {dim} "),
+      rule('(?<!mathrm\s{)Pr', " \\mathrm {Pr} ")
+    ].freeze
 
-      {
-        regex: "(?<!mathrm\\s{)if",
-        latex: " \\mathrm {if} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)for",
-        latex: " \\mathrm {for} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)and",
-        latex: " \\mathrm {and} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)hom",
-        latex: " \\mathrm {hom} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)ker",
-        latex: " \\mathrm {ker} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)deg",
-        latex: " \\mathrm {deg} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)arg",
-        latex: " \\mathrm {arg} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)dim",
-        latex: " \\mathrm {dim} "
-      },
-      {
-        regex: "(?<!mathrm\\s{)Pr",
-        latex: " \\mathrm {Pr} "
-      } 
-    ]
+    # Combined symbol list for simple replacement
+    SYMBOL = (
+      GREEK_LETTERS +
+      SPECIAL_SYMBOLS +
+      SET_OPERATIONS +
+      COMPARISON_OPERATORS +
+      BINARY_OPERATORS +
+      LOGICAL_OPERATORS +
+      RELATION_SYMBOLS +
+      MISC_SYMBOLS +
+      ARROWS +
+      DELIMITERS +
+      GEOMETRY_SYMBOLS
+    ).freeze
 
+    # Build regex pattern from a rule
     def rule_regex(rule)
-      regexes = []
-      if rule[:regex].class == Array
-        regexes = rule[:regex]
-      else
-        regexes << rule[:regex]
-      end
+      patterns = Array(rule[:regex])
+      alphabetic = rule[:alphabetic] != false
 
-      is_alphabetic = rule[:alphabetic].nil? ? true : rule[:alphabetic]
-      if is_alphabetic
-        return %r((?<![a-zA-Z\\])(#{regexes.join('|')}))
-      else
-        return %r((?<![\\])(#{regexes.join('|')}))
-      end
+      prefix = alphabetic ? '(?<![a-zA-Z\\\\])' : '(?<![\\\\])'
+      Regexp.new("#{prefix}(#{patterns.join('|')})")
     end
   end
 end

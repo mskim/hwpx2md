@@ -1,0 +1,181 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require "hwpx2md"
+
+module Hwpx2md
+  # Command-line interface for hwpx2md
+  class CLI
+    def initialize(args)
+      @args = args
+      @options = {
+        recursive: true,
+        output_dir: nil,
+        extract_images: true,
+        extract_styles: false,
+        verbose: false,
+        dry_run: false
+      }
+    end
+
+    def run
+      parse_options!
+
+      if @args.empty?
+        puts "Error: Please specify a folder path"
+        puts "Usage: hwpx2md [options] <folder_path>"
+        puts "Run 'hwpx2md --help' for more information"
+        exit 1
+      end
+
+      folder_path = @args.first
+
+      unless File.directory?(folder_path)
+        puts "Error: '#{folder_path}' is not a valid directory"
+        exit 1
+      end
+
+      convert_folder(folder_path)
+    end
+
+    private
+
+    def parse_options!
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: hwpx2md [options] <folder_path>"
+        opts.separator ""
+        opts.separator "Convert HWPX files to Markdown"
+        opts.separator ""
+        opts.separator "Options:"
+
+        opts.on("-o", "--output DIR", "Output directory (default: same as input)") do |dir|
+          @options[:output_dir] = dir
+        end
+
+        opts.on("--no-recursive", "Don't process subfolders") do
+          @options[:recursive] = false
+        end
+
+        opts.on("-i", "--[no-]images", "Extract images (default: true)") do |v|
+          @options[:extract_images] = v
+        end
+
+        opts.on("-s", "--[no-]styles", "Extract styles to YAML (default: false)") do |v|
+          @options[:extract_styles] = v
+        end
+
+        opts.on("-v", "--verbose", "Print verbose output") do
+          @options[:verbose] = true
+        end
+
+        opts.on("-n", "--dry-run", "Show what would be converted without doing it") do
+          @options[:dry_run] = true
+        end
+
+        opts.on("-h", "--help", "Show this help message") do
+          puts opts
+          exit
+        end
+
+        opts.on("--version", "Show version") do
+          puts "hwpx2md #{Hwpx2md::VERSION}"
+          exit
+        end
+      end
+
+      parser.parse!(@args)
+    rescue OptionParser::InvalidOption => e
+      puts "Error: #{e.message}"
+      puts "Run 'hwpx2md --help' for usage information"
+      exit 1
+    end
+
+    def convert_folder(folder_path)
+      @input_folder = File.expand_path(folder_path)
+      pattern = @options[:recursive] ? "**/*.hwpx" : "*.hwpx"
+      files = Dir.glob(File.join(@input_folder, pattern))
+
+      if files.empty?
+        puts "No .hwpx files found in '#{folder_path}'"
+        exit 0
+      end
+
+      puts "Found #{files.length} HWPX file(s)" if @options[:verbose]
+
+      success_count = 0
+      error_count = 0
+
+      files.each do |hwpx_file|
+        result = convert_file(hwpx_file)
+        if result
+          success_count += 1
+        else
+          error_count += 1
+        end
+      end
+
+      puts ""
+      puts "Conversion complete: #{success_count} succeeded, #{error_count} failed"
+    end
+
+    def convert_file(hwpx_file)
+      relative_path = hwpx_file
+      output_base = determine_output_path(hwpx_file)
+
+      if @options[:dry_run]
+        puts "[DRY RUN] Would convert: #{relative_path}"
+        puts "          Output: #{output_base}.md"
+        return true
+      end
+
+      print "Converting: #{relative_path}..." if @options[:verbose]
+
+      begin
+        doc = Hwpx2md::Document.new(hwpx_file)
+
+        # Create output directory if needed
+        output_dir = File.dirname(output_base)
+        FileUtils.mkdir_p(output_dir) unless File.directory?(output_dir)
+
+        # Convert to markdown
+        md_path = "#{output_base}.md"
+        doc.save_as_markdown(md_path, extract_images: @options[:extract_images])
+        puts " -> #{md_path}" if @options[:verbose]
+
+        # Extract styles if requested
+        if @options[:extract_styles]
+          styles_dir = File.join(output_dir, "styles")
+          doc.extract_styles(styles_dir)
+          puts " -> #{styles_dir}/" if @options[:verbose]
+        end
+
+        true
+      rescue StandardError => e
+        puts " ERROR: #{e.message}" if @options[:verbose]
+        puts "Error converting #{relative_path}: #{e.message}" unless @options[:verbose]
+        false
+      end
+    end
+
+    def determine_output_path(hwpx_file)
+      basename = File.basename(hwpx_file, ".hwpx")
+
+      if @options[:output_dir]
+        # Compute relative path from input folder
+        relative_path = hwpx_file.sub("#{@input_folder}/", "")
+        relative_dir = File.dirname(relative_path)
+        relative_dir = "" if relative_dir == "."
+
+        output_subdir = File.join(@options[:output_dir], relative_dir)
+        File.join(output_subdir, basename)
+      else
+        # Output in same directory as input
+        File.join(File.dirname(hwpx_file), basename)
+      end
+    end
+  end
+end
+
+# Run CLI
+Hwpx2md::CLI.new(ARGV).run
